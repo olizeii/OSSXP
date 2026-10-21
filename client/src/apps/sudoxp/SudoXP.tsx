@@ -2,42 +2,48 @@
  * SudoXP – Sudoku als „vorinstalliertes Windows-Spiel“ im Stil von Minesweeper:
  * Menüleiste (Spiel / ?), LED-Zähler (freie Felder, Zeit), Smiley-Button für ein neues Spiel.
  *
+ * Zwei Modi:
+ *  - Klassisch: zufällige Rätsel in drei Stufen, Tipps, Fehlerprüfung, lokale Bestzeiten.
+ *  - Täglich:   ein Rätsel für alle (vom Server, ohne Lösung im Browser). Der Server prüft die
+ *               Lösung und misst die Zeit → globale Bestenliste, Coins, Streak-Abzeichen.
+ *
  * Tastatur: 1–9 setzen · 0/Entf/Rücktaste löschen · Pfeiltasten bewegen · N = Notizen
- *           Strg+Z = Rückgängig · H = Tipp · F2 = Neues Spiel
- * Der Spielstand wird im Browser gemerkt; die Zeit pausiert, solange das Fenster minimiert ist.
+ *           Strg+Z = Rückgängig · H = Tipp (nur klassisch) · F2 = Neues Spiel
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api, ApiError } from '../../core/api';
 import type { AppWindowProps } from '../../core/types';
+import { Anonymous, UserName } from '../../components/user/UserBits';
+import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useWindowStore } from '../../store/windowStore';
-import {
-  DIFFICULTIES,
-  colOf,
-  findConflicts,
-  formatTime,
-  generate,
-  rowOf,
-  sameHouse,
-  type Difficulty,
-  type Grid,
-} from './sudoku';
+import { DIFFICULTIES, colOf, findConflicts, formatTime, generate, rowOf, sameHouse, type Difficulty, type Grid } from './sudoku';
 import './sudoxp.css';
 
+type Mode = 'classic' | 'daily';
+
 interface Game {
+  mode: Mode;
   difficulty: Difficulty;
   givens: Grid; // vorgegebene Zahlen (nicht änderbar)
-  solution: Grid;
-  values: Grid; // aktueller Stand inkl. Vorgaben
-  notes: number[]; // Bitmaske der Notizen pro Zelle
+  solution: Grid; // im Tagesmodus leer – die Lösung kennt nur der Server
+  values: Grid;
+  notes: number[];
   mistakes: number;
   hints: number;
-  elapsed: number; // Sekunden
+  elapsed: number;
   won: boolean;
+  // nur Tagesmodus
+  date?: string;
+  token?: string;
+  startedAt?: number;
+  result?: { seconds: number; rank: number; total?: number };
 }
 
 type Snapshot = Pick<Game, 'values' | 'notes'>;
 
 const SAVE_KEY = 'ossxp-sudoxp-game';
+const DAILY_KEY = 'ossxp-sudoxp-daily';
 const BEST_KEY = 'ossxp-sudoxp-best';
 
 // ─── localStorage (kann in privaten Fenstern fehlen → immer try/catch) ──────
@@ -60,6 +66,7 @@ function save(key: string, value: unknown) {
 function newGame(difficulty: Difficulty): Game {
   const { puzzle, solution } = generate(difficulty);
   return {
+    mode: 'classic',
     difficulty,
     givens: puzzle,
     solution,
@@ -72,29 +79,71 @@ function newGame(difficulty: Difficulty): Game {
   };
 }
 
+interface DailyResponse {
+  date: string;
+  difficulty: Difficulty;
+  puzzle: Grid;
+  token: string;
+  startedAt: number;
+  solved: { seconds: number; rank: number } | null;
+}
+
+/** Tagesrätsel vom Server holen – angefangene Eingaben desselben Tages werden fortgesetzt. */
+async function loadDaily(): Promise<Game> {
+  const d = await api<DailyResponse>('/sudoku/daily');
+  const saved = load<Game>(DAILY_KEY);
+  const resume = saved?.date === d.date ? saved : null;
+  return {
+    mode: 'daily',
+    difficulty: d.difficulty,
+    givens: d.puzzle,
+    solution: [],
+    values: resume?.values ?? d.puzzle.slice(),
+    notes: resume?.notes ?? new Array(81).fill(0),
+    mistakes: 0,
+    hints: 0,
+    elapsed: d.solved?.seconds ?? Math.floor((Date.now() - (resume?.startedAt ?? d.startedAt)) / 1000),
+    won: Boolean(d.solved ?? resume?.won),
+    date: d.date,
+    // Gäste behalten ihren ersten Token (= erste Startzeit), eingeloggte bekommen sie vom Server
+    token: resume && !useAuthStore.getState().user ? resume.token : d.token,
+    startedAt: resume && !useAuthStore.getState().user ? resume.startedAt : d.startedAt,
+    result: d.solved ?? resume?.result,
+  };
+}
+
 export default function SudoXP({ windowId }: AppWindowProps) {
-  const [game, setGame] = useState<Game>(() => load<Game>(SAVE_KEY) ?? newGame('easy'));
+  // Ältere Spielstände haben noch kein `mode`-Feld → als klassisch behandeln
+  const [game, setGame] = useState<Game>(() => {
+    const saved = load<Game>(SAVE_KEY);
+    return saved ? { ...saved, mode: 'classic' } : newGame('easy');
+  });
   const [selected, setSelected] = useState<number>(() => game.givens.findIndex((v) => !v));
   const [notesMode, setNotesMode] = useState(false);
   const [menu, setMenu] = useState<'game' | 'help' | null>(null);
+  const [scoreboard, setScoreboard] = useState(false);
+  const [busy, setBusy] = useState(false);
   const history = useRef<Snapshot[]>([]);
   const boardRef = useRef<HTMLDivElement>(null);
   const minimized = useWindowStore((s) => s.windows.find((w) => w.id === windowId)?.minimized ?? false);
+  const daily = game.mode === 'daily';
 
-  // Spielstand merken
-  useEffect(() => save(SAVE_KEY, game), [game]);
+  // Spielstand merken (getrennt nach Modus)
+  useEffect(() => save(daily ? DAILY_KEY : SAVE_KEY, game), [game, daily]);
 
-  // Uhr: läuft nur, solange nicht gewonnen und das Fenster nicht minimiert ist
+  // Uhr: klassisch pausiert sie bei minimiertem Fenster; im Tagesmodus misst der Server (läuft weiter)
   useEffect(() => {
-    if (game.won || minimized) return;
-    const t = setInterval(() => setGame((g) => ({ ...g, elapsed: g.elapsed + 1 })), 1000);
+    if (game.won || (!daily && minimized)) return;
+    const t = setInterval(
+      () => setGame((g) => ({ ...g, elapsed: g.mode === 'daily' && g.startedAt ? Math.floor((Date.now() - g.startedAt) / 1000) : g.elapsed + 1 })),
+      1000,
+    );
     return () => clearInterval(t);
-  }, [game.won, minimized]);
+  }, [game.won, minimized, daily]);
 
   useEffect(() => boardRef.current?.focus(), []);
 
-  const start = useCallback((difficulty: Difficulty) => {
-    const g = newGame(difficulty);
+  const begin = useCallback((g: Game) => {
     history.current = [];
     setGame(g);
     setSelected(g.givens.findIndex((v) => !v));
@@ -102,27 +151,69 @@ export default function SudoXP({ windowId }: AppWindowProps) {
     boardRef.current?.focus();
   }, []);
 
+  const startClassic = useCallback((difficulty: Difficulty) => begin(newGame(difficulty)), [begin]);
+
+  const startDaily = useCallback(async () => {
+    setMenu(null);
+    setBusy(true);
+    try {
+      begin(await loadDaily());
+    } catch (e) {
+      useUiStore.getState().showMessage({ title: 'SudoXP', icon: 'error', text: `Das tägliche Sudoku konnte nicht geladen werden.\n${(e as Error).message}` });
+    } finally {
+      setBusy(false);
+    }
+  }, [begin]);
+
+  const restart = () => (daily ? startDaily() : startClassic(game.difficulty));
+
   // Aktueller Stand für Event-Handler (ohne Seiteneffekte in setState-Updatern)
   const gameRef = useRef(game);
   gameRef.current = game;
 
-  /** Wendet eine Änderung an, merkt den alten Stand fürs Rückgängigmachen und prüft auf Sieg. */
-  const apply = useCallback((fn: (g: Game) => Partial<Game>) => {
-    const g = gameRef.current;
-    if (g.won) return;
-    const patch = fn(g);
-    if (Object.keys(patch).length === 0) return;
-    history.current.push({ values: g.values, notes: g.notes });
-    const next = { ...g, ...patch };
-    next.won = next.values.every((v, i) => v === next.solution[i]);
-    gameRef.current = next;
-    setGame(next);
+  /** Tagesrätsel einreichen – der Server prüft die Lösung und vergibt den Platz. */
+  const submitDaily = useCallback(async (g: Game) => {
+    setBusy(true);
+    try {
+      const res = await api<{ seconds: number; rank: number; total: number }>('/sudoku/daily/submit', {
+        method: 'POST',
+        body: { token: g.token, values: g.values },
+      });
+      const result = { seconds: res.seconds, rank: res.rank, total: res.total };
+      setGame((cur) => ({ ...cur, won: true, elapsed: res.seconds, result }));
+      announceDaily(result, () => setScoreboard(true));
+    } catch (e) {
+      const text = e instanceof ApiError && e.status === 422 ? 'Das Feld ist voll, aber noch nicht richtig gelöst. Prüfe deine Zahlen!' : (e as Error).message;
+      useUiStore.getState().showMessage({ title: 'Tägliches Sudoku', icon: 'warning', text });
+    } finally {
+      setBusy(false);
+    }
   }, []);
 
-  // Gratulieren, sobald das Rätsel in dieser Sitzung gelöst wurde
+  /** Wendet eine Änderung an, merkt den alten Stand fürs Rückgängigmachen und prüft auf Sieg. */
+  const apply = useCallback(
+    (fn: (g: Game) => Partial<Game>) => {
+      const g = gameRef.current;
+      if (g.won) return;
+      const patch = fn(g);
+      if (Object.keys(patch).length === 0) return;
+      history.current.push({ values: g.values, notes: g.notes });
+      const next = { ...g, ...patch };
+      if (next.mode === 'classic') {
+        next.won = next.values.every((v, i) => v === next.solution[i]);
+      } else if (patch.values && next.values.every(Boolean) && findConflicts(next.values).size === 0) {
+        submitDaily(next);
+      }
+      gameRef.current = next;
+      setGame(next);
+    },
+    [submitDaily],
+  );
+
+  // Klassisch: gratulieren, sobald das Rätsel in dieser Sitzung gelöst wurde
   const wasWon = useRef(game.won);
   useEffect(() => {
-    if (game.won && !wasWon.current) announceWin(game, () => start(game.difficulty));
+    if (game.won && !wasWon.current && game.mode === 'classic') announceWin(game, () => startClassic(game.difficulty));
     wasWon.current = game.won;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.won]);
@@ -140,9 +231,9 @@ export default function SudoXP({ windowId }: AppWindowProps) {
         }
         const values = g.values.slice();
         values[selected] = values[selected] === digit ? 0 : digit;
-        // Gesetzte Ziffer aus den Notizen der Nachbarn entfernen (wie bei modernen Sudoku-Apps)
+        // Gesetzte Ziffer aus den Notizen der Nachbarn entfernen
         const notes = g.notes.map((n, i) => (i === selected ? 0 : digit && sameHouse(i, selected) ? n & ~(1 << digit) : n));
-        const wrong = values[selected] !== 0 && values[selected] !== g.solution[selected];
+        const wrong = g.mode === 'classic' && values[selected] !== 0 && values[selected] !== g.solution[selected];
         return { values, notes, mistakes: g.mistakes + (wrong ? 1 : 0) };
       });
     },
@@ -151,7 +242,7 @@ export default function SudoXP({ windowId }: AppWindowProps) {
 
   const hint = useCallback(() => {
     apply((g) => {
-      // Ausgewähltes Feld, wenn leer/falsch – sonst das erste offene Feld
+      if (g.mode === 'daily') return {}; // im Tagesmodus gibt es keine Tipps
       const target =
         selected >= 0 && !g.givens[selected] && g.values[selected] !== g.solution[selected]
           ? selected
@@ -171,7 +262,7 @@ export default function SudoXP({ windowId }: AppWindowProps) {
 
   function onKeyDown(e: React.KeyboardEvent) {
     const key = e.key;
-    if (key === 'F2') return (e.preventDefault(), start(game.difficulty));
+    if (key === 'F2') return (e.preventDefault(), restart());
     if ((e.ctrlKey || e.metaKey) && key.toLowerCase() === 'z') return (e.preventDefault(), undo());
     if (/^[1-9]$/.test(key)) return setDigit(Number(key));
     if (key === '0' || key === 'Backspace' || key === 'Delete') return setDigit(0);
@@ -190,12 +281,12 @@ export default function SudoXP({ windowId }: AppWindowProps) {
   }
 
   const conflicts = useMemo(() => findConflicts(game.values), [game.values]);
-  const remaining = game.values.filter((v, i) => v !== game.solution[i]).length;
+  const remaining = daily ? game.values.filter((v) => !v).length : game.values.filter((v, i) => v !== game.solution[i]).length;
   const digitCount = useMemo(() => {
     const c = new Array(10).fill(0);
-    game.values.forEach((v, i) => v && v === game.solution[i] && c[v]++);
+    game.values.forEach((v, i) => v && (daily || v === game.solution[i]) && c[v]++);
     return c;
-  }, [game.values, game.solution]);
+  }, [game.values, game.solution, daily]);
   const selValue = selected >= 0 ? game.values[selected] : 0;
 
   return (
@@ -208,17 +299,19 @@ export default function SudoXP({ windowId }: AppWindowProps) {
           </button>
           {menu === 'game' && (
             <div className="sx-menu" role="menu">
-              <MenuItem label="Neu" shortcut="F2" onClick={() => start(game.difficulty)} />
+              <MenuItem label="Neu" shortcut="F2" onClick={restart} />
               <hr />
               {(Object.keys(DIFFICULTIES) as Difficulty[]).map((d) => (
-                <MenuItem key={d} label={DIFFICULTIES[d].label} checked={game.difficulty === d} onClick={() => start(d)} />
+                <MenuItem key={d} label={DIFFICULTIES[d].label} checked={!daily && game.difficulty === d} onClick={() => startClassic(d)} />
               ))}
+              <MenuItem label="Tägliches Sudoku" checked={daily} onClick={startDaily} />
               <hr />
-              <MenuItem label="Tipp" shortcut="H" onClick={() => (setMenu(null), hint())} />
+              <MenuItem label="Tipp" shortcut="H" disabled={daily} onClick={() => (setMenu(null), hint())} />
               <MenuItem label="Rückgängig" shortcut="Strg+Z" onClick={() => (setMenu(null), undo())} />
               <MenuItem label="Notizen" shortcut="N" checked={notesMode} onClick={() => (setMenu(null), setNotesMode((v) => !v))} />
               <hr />
-              <MenuItem label="Bestzeiten…" onClick={() => (setMenu(null), showBestTimes())} />
+              <MenuItem label="Bestenliste (täglich)…" onClick={() => (setMenu(null), setScoreboard(true))} />
+              <MenuItem label="Eigene Bestzeiten…" onClick={() => (setMenu(null), showBestTimes())} />
               <hr />
               <MenuItem label="Beenden" onClick={() => useWindowStore.getState().close(windowId)} />
             </div>
@@ -238,27 +331,33 @@ export default function SudoXP({ windowId }: AppWindowProps) {
       </nav>
 
       <div className="sx-frame">
+        {/* ── Modus ── */}
+        <div className="sx-modes" role="tablist">
+          <button role="tab" aria-selected={!daily} className={!daily ? 'active' : ''} onClick={() => daily && startClassic(game.difficulty)}>
+            Klassisch
+          </button>
+          <button role="tab" aria-selected={daily} className={daily ? 'active' : ''} onClick={() => !daily && startDaily()} disabled={busy}>
+            Täglich
+          </button>
+          <button className="sx-board-btn" onClick={() => setScoreboard(true)} title="Bestenliste des täglichen Sudokus">
+            Bestenliste
+          </button>
+        </div>
+
         {/* ── Anzeige: freie Felder · Smiley · Zeit ── */}
         <div className="sx-panel">
           <Led value={remaining} title="Noch offene Felder" />
-          <button className="sx-face" onClick={() => start(game.difficulty)} title="Neues Spiel (F2)">
+          <button className="sx-face" onClick={restart} title={daily ? 'Tagesrätsel neu laden (F2)' : 'Neues Spiel (F2)'}>
             <Smiley cool={game.won} />
           </button>
           <Led value={Math.min(game.elapsed, 999)} title={`Zeit: ${formatTime(game.elapsed)}`} />
         </div>
 
         {/* ── Spielfeld ── */}
-        <div
-          ref={boardRef}
-          className={`sx-board ${game.won ? 'won' : ''}`}
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          role="grid"
-          aria-label="Sudoku-Spielfeld"
-        >
+        <div ref={boardRef} className={`sx-board ${game.won ? 'won' : ''}`} tabIndex={0} onKeyDown={onKeyDown} role="grid" aria-label="Sudoku-Spielfeld">
           {game.values.map((v, i) => {
             const given = game.givens[i] !== 0;
-            const wrong = !given && v !== 0 && v !== game.solution[i];
+            const wrong = !given && v !== 0 && (daily ? conflicts.has(i) : v !== game.solution[i]);
             const cls = [
               'sx-cell',
               given ? 'given' : 'user',
@@ -312,19 +411,110 @@ export default function SudoXP({ windowId }: AppWindowProps) {
       </div>
 
       <div className="xp-statusbar">
-        <span>{DIFFICULTIES[game.difficulty].label}</span>
-        <span>Fehler: {game.mistakes}</span>
-        <span>Tipps: {game.hints}</span>
+        {daily ? (
+          <>
+            <span>Täglich · {game.date ? new Date(`${game.date}T12:00`).toLocaleDateString('de-DE') : ''}</span>
+            <span>{game.result ? `Platz ${game.result.rank}${game.result.total ? ` von ${game.result.total}` : ''}` : busy ? 'Wird geprüft…' : 'Zeit misst der Server'}</span>
+          </>
+        ) : (
+          <>
+            <span>{DIFFICULTIES[game.difficulty].label}</span>
+            <span>Fehler: {game.mistakes}</span>
+            <span>Tipps: {game.hints}</span>
+          </>
+        )}
       </div>
+
+      {scoreboard && <Scoreboard onClose={() => setScoreboard(false)} />}
+    </div>
+  );
+}
+
+// ─── Bestenliste ───────────────────────────────────────────────────────────
+
+interface ScoreEntry {
+  rank: number;
+  seconds: number;
+  user: { username: string; color: string } | null;
+}
+
+/** Globale Bestenliste des täglichen Sudokus – als XP-Dialog innerhalb des Spielfensters. */
+function Scoreboard({ onClose }: { onClose: () => void }) {
+  const [data, setData] = useState<{ date: string; total: number; entries: ScoreEntry[] } | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api<{ date: string; total: number; entries: ScoreEntry[] }>('/sudoku/daily/scoreboard').then(setData, (e: Error) => setError(e.message));
+  }, []);
+
+  return (
+    <div className="sx-overlay" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <section className="xp-window xp-dialog sx-scoreboard" role="dialog" aria-label="Bestenliste">
+        <header className="title-bar">
+          <span className="title-bar-text">Bestenliste – Tägliches Sudoku</span>
+          <div className="title-bar-controls">
+            <button className="close" aria-label="Schließen" onClick={onClose}>
+              <svg width="11" height="11" viewBox="0 0 11 11">
+                <path d="M2 2l7 7M9 2l-7 7" stroke="#fff" strokeWidth="2" />
+              </svg>
+            </button>
+          </div>
+        </header>
+        <div className="window-body">
+          {error ? (
+            <p className="sx-sb-info">{error}</p>
+          ) : !data ? (
+            <p className="sx-sb-info">Wird geladen…</p>
+          ) : (
+            <>
+              <p className="sx-sb-info">
+                {new Date(`${data.date}T12:00`).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })} ·{' '}
+                {data.total} {data.total === 1 ? 'Löser' : 'Löser:innen'}
+              </p>
+              <div className="sx-sb-list">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Platz</th>
+                      <th>Name</th>
+                      <th>Zeit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.entries.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="sx-sb-empty">
+                          Heute hat noch niemand gelöst – sei die/der Erste!
+                        </td>
+                      </tr>
+                    )}
+                    {data.entries.map((e) => (
+                      <tr key={e.rank} className={e.rank <= 3 ? `top${e.rank}` : ''}>
+                        <td>{e.rank}.</td>
+                        <td>{e.user ? <UserName username={e.user.username} color={e.user.color} /> : <Anonymous />}</td>
+                        <td>{formatTime(e.seconds)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          <div className="dialog-buttons" style={{ justifyContent: 'flex-end' }}>
+            <button className="xp-button default" onClick={onClose}>
+              OK
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 // ─── Kleine Bausteine ──────────────────────────────────────────────────────
 
-function MenuItem({ label, shortcut, checked, onClick }: { label: string; shortcut?: string; checked?: boolean; onClick: () => void }) {
+function MenuItem({ label, shortcut, checked, disabled, onClick }: { label: string; shortcut?: string; checked?: boolean; disabled?: boolean; onClick: () => void }) {
   return (
-    <button className="sx-menu-item" role="menuitem" onClick={onClick}>
+    <button className="sx-menu-item" role="menuitem" onClick={onClick} disabled={disabled}>
       <span className="sx-check">{checked ? '✓' : ''}</span>
       <span className="sx-menu-label">{label}</span>
       <span className="sx-shortcut">{shortcut}</span>
@@ -386,20 +576,31 @@ function announceWin(game: Game, onNewGame: () => void) {
     text:
       `Glückwunsch! Sie haben das Rätsel (${DIFFICULTIES[game.difficulty].label}) in ${formatTime(game.elapsed)} gelöst.` +
       `\nFehler: ${game.mistakes} · Tipps: ${game.hints}` +
-      (record ? '\n\nNeue Bestzeit!' : ''),
+      (record ? '\n\nNeue Bestzeit!' : '') +
+      '\n\nTipp: Probiere das tägliche Sudoku – mit Bestenliste für alle!',
     buttons: [{ label: 'Neues Spiel', primary: true, action: onNewGame }, { label: 'OK' }],
+  });
+}
+
+function announceDaily(result: { seconds: number; rank: number; total?: number }, openBoard: () => void) {
+  const loggedIn = Boolean(useAuthStore.getState().user);
+  useUiStore.getState().showMessage({
+    title: 'Tägliches Sudoku gelöst!',
+    icon: 'info',
+    text:
+      `Geschafft in ${formatTime(result.seconds)} – Platz ${result.rank}${result.total ? ` von ${result.total}` : ''}.` +
+      (loggedIn ? '' : '\n\nDu bist nicht angemeldet und erscheinst als „Anonym“. Mit Konto bekommst du Coins und Abzeichen.'),
+    buttons: [{ label: 'Bestenliste', primary: true, action: openBoard }, { label: 'OK' }],
   });
 }
 
 function showBestTimes() {
   const best = load<BestTimes>(BEST_KEY) ?? {};
-  const lines = (Object.keys(DIFFICULTIES) as Difficulty[]).map(
-    (d) => `${DIFFICULTIES[d].label}:\t${best[d] !== undefined ? formatTime(best[d]!) : '—'}`,
-  );
+  const lines = (Object.keys(DIFFICULTIES) as Difficulty[]).map((d) => `${DIFFICULTIES[d].label}:\t${best[d] !== undefined ? formatTime(best[d]!) : '—'}`);
   useUiStore.getState().showMessage({
-    title: 'Bestzeiten',
+    title: 'Eigene Bestzeiten',
     icon: 'info',
-    text: `${lines.join('\n')}\n\n(Gewertet werden nur Spiele ohne Tipps.)`,
+    text: `${lines.join('\n')}\n\n(Klassischer Modus, nur Spiele ohne Tipps.)`,
     buttons: [
       { label: 'OK', primary: true },
       { label: 'Zurücksetzen', action: () => save(BEST_KEY, {}) },
@@ -413,6 +614,7 @@ function showRules() {
     icon: 'question',
     text:
       'Füllen Sie das Feld so aus, dass in jeder Zeile, jeder Spalte und jedem 3×3-Block die Ziffern 1 bis 9 genau einmal vorkommen.\n\n' +
+      'Tägliches Sudoku: ein Rätsel pro Tag für alle. Die Zeit läuft ab dem ersten Öffnen, Tipps gibt es keine.\n\n' +
       'Tastatur: 1–9 setzen · Entf löschen · Pfeiltasten bewegen\nN = Notizen · H = Tipp · Strg+Z = Rückgängig · F2 = Neues Spiel',
   });
 }
@@ -421,6 +623,6 @@ function showAbout() {
   useUiStore.getState().showMessage({
     title: 'Info über SudoXP',
     icon: 'info',
-    text: 'SudoXP Version 1.0\nEin Zeitvertreib für OSSXP.\n\nJedes Rätsel wird zufällig erzeugt und hat genau eine Lösung.',
+    text: 'SudoXP Version 2.0\nEin Zeitvertreib für OSSXP.\n\nJedes Rätsel wird zufällig erzeugt und hat genau eine Lösung.',
   });
 }

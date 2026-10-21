@@ -149,7 +149,7 @@ export interface DashboardStats {
 }
 
 /** Ansichten von UntisXP (wie die Seiten von UntisDashboard). */
-export type View = 'dashboard' | 'week' | 'teacher' | 'class' | 'room' | 'free' | 'subst';
+export type View = 'today' | 'dashboard' | 'week' | 'teacher' | 'class' | 'room' | 'free' | 'subst';
 
 export interface Route {
   view: View;

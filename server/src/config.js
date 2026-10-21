@@ -36,6 +36,10 @@ export const config = {
   },
 
   dbFile: process.env.DB_FILE ?? './data/ossxp.db',
+  /** Ordner für Uploads (MollyXP, NewsXP) */
+  uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
+  /** Benutzernamen mit Admin-Rechten (z. B. News veröffentlichen), kommagetrennt */
+  adminUsernames: list(process.env.ADMIN_USERNAMES).map((n) => n.toLowerCase()),
 
   untis: {
     secret: secret('UNTIS_SECRET'),
@@ -46,6 +50,20 @@ export const config = {
     timeoutMs: 10_000,
     /** WebUntis beendet Sessions nach ~10 min Inaktivität – wir loggen nach 8 min neu ein. */
     sessionIdleMs: 8 * 60_000,
+    /**
+     * Lehrerverzeichnis für volle Namen zu den Kürzeln, pro Schule.
+     * HTL Hollabrunn ist voreingestellt; weitere Schulen: TEACHER_DIRECTORY_<SCHULE>=url
+     */
+    teacherDirectories: {
+      'htl-hl': process.env.TEACHER_DIRECTORY_HTL_HL ?? 'https://www.htl-hl.ac.at/services/teachers/teachers.php',
+      ...Object.fromEntries(
+        Object.entries(process.env)
+          .filter(([k]) => k.startsWith('TEACHER_DIRECTORY_') && k !== 'TEACHER_DIRECTORY_HTL_HL')
+          .map(([k, v]) => [k.slice('TEACHER_DIRECTORY_'.length).toLowerCase().replaceAll('_', '-'), v]),
+      ),
+    },
+    /** Manuelle Korrekturen: "KÜRZEL=Nachname Vorname; …" */
+    teacherNameOverrides: process.env.UNTIS_TEACHER_NAMES ?? '',
   },
 
   chat: {

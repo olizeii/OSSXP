@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Punkteshop: Einkaufstasche mit Goldmünze -->
+  <defs>
+    <linearGradient id="sh-bag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9a6a"/><stop offset=".5" stop-color="#e2531c"/><stop offset="1" stop-color="#a83208"/>
+    </linearGradient>
+    <radialGradient id="sh-coin" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#fff7b0"/><stop offset=".6" stop-color="#f5c518"/><stop offset="1" stop-color="#b8860b"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="24" cy="45" rx="17" ry="2" fill="#000" opacity=".2"/>
+  <path d="M15 16v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#7a2a06" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M7 16h32l-2.5 26h-27Z" fill="url(#sh-bag)" stroke="#7a2a06" stroke-linejoin="round"/>
+  <path d="M8.5 17.5h29l-.4 5C28 19.5 18 19.5 8.9 22.5Z" fill="#fff" opacity=".35"/>
+  <circle cx="33.5" cy="33.5" r="10" fill="url(#sh-coin)" stroke="#8a6400"/>
+  <circle cx="33.5" cy="33.5" r="6.8" fill="none" stroke="#b8860b"/>
+  <text x="33.5" y="37.8" text-anchor="middle" font-family="Tahoma, sans-serif" font-weight="bold" font-size="11" fill="#8a6400">C</text>
+  <ellipse cx="30" cy="28.5" rx="4" ry="2" fill="#fff" opacity=".6"/>
+</svg>

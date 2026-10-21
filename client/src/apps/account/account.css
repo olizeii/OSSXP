@@ -41,6 +41,8 @@
 .cp-task.active { font-weight: bold; }
 
 .cp-content { flex: 1; padding: 14px 20px; overflow: auto; }
+.cp-content[hidden] { display: none; }
+.cp-content-flush { padding: 0; overflow: hidden; }
 .cp-content p { line-height: 1.5; }
 
 .cp-heading {

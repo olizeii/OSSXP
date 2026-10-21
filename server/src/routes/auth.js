@@ -5,6 +5,9 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { users } from '../db.js';
+import { award, onUserCreated } from '../economy/service.js';
+import { config } from '../config.js';
+import { zonedNow } from '../untis/time.js';
 import { clearAuthCookie, publicUser, requireAuth, setAuthCookie } from '../middleware/auth.js';
 
 export const authRouter = Router();
@@ -57,6 +60,7 @@ authRouter.post('/register', authLimiter, async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 12);
   const color = CHAT_COLORS[Math.floor(Math.random() * CHAT_COLORS.length)];
   const user = users.create({ username, passwordHash, color });
+  onUserCreated(user.id);
 
   setAuthCookie(res, user);
   res.status(201).json({ user: publicUser(user) });
@@ -84,6 +88,10 @@ authRouter.post('/logout', (_req, res) => {
 
 /** Aktueller User – `user: null` für Gäste (kein Fehler, damit der Client einfach starten kann). */
 authRouter.get('/me', (req, res) => {
+  if (req.user) {
+    onUserCreated(req.user.id); // ältere Konten bekommen Wallet/Profil nachträglich
+    award(req.user.id, 'daily.login', zonedNow(config.untis.timezone).date);
+  }
   res.json({ user: req.user ? publicUser(req.user) : null });
 });
 

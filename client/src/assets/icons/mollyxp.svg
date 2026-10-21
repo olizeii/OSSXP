@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- MollyXP: gelber XP-Ordner mit Notizblatt und Bleistift -->
+  <defs>
+    <linearGradient id="mx-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe089"/><stop offset="1" stop-color="#e3a90f"/>
+    </linearGradient>
+    <linearGradient id="mx-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff2b8"/><stop offset=".5" stop-color="#ffd453"/><stop offset="1" stop-color="#e8a710"/>
+    </linearGradient>
+    <linearGradient id="mx-paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e3ebf7"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="44.5" rx="19" ry="2" fill="#000" opacity=".2"/>
+  <path d="M4 10.5a2 2 0 0 1 2-2h11l3 3h20a2 2 0 0 1 2 2V39H4Z" fill="url(#mx-back)" stroke="#a87300"/>
+  <path d="M11 6.5h22l4 4v22H11Z" fill="url(#mx-paper)" stroke="#5f7ba8"/>
+  <path d="M15 13h17M15 17h17M15 21h13M15 25h15" stroke="#7fa0d6" stroke-width="1.4"/>
+  <text x="29" y="13" font-family="Tahoma" font-weight="bold" font-size="5" fill="#d42020">A+</text>
+  <path d="M3 19.5a2 2 0 0 1 2-2h38a2 2 0 0 1 2 2.3L42.5 39.5a2 2 0 0 1-2 1.5h-33a2 2 0 0 1-2-1.6Z" fill="url(#mx-front)" stroke="#a87300"/>
+  <path d="M5 19.5h38l-.4 3C30 20.5 18 20.5 5.5 22.5Z" fill="#fff" opacity=".55"/>
+  <g transform="rotate(-35 36 30)">
+    <rect x="33" y="18" width="5" height="17" fill="#3c8de8" stroke="#1b4c8c" stroke-width=".7"/>
+    <path d="M33 35l2.5 5 2.5-5Z" fill="#f3d3a0" stroke="#8a5a00" stroke-width=".7"/>
+    <rect x="33" y="15.5" width="5" height="3" fill="#f08aa0" stroke="#8a5a00" stroke-width=".6"/>
+  </g>
+</svg>

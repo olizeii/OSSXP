@@ -11,10 +11,13 @@
  *   GET    /rooms/free?date&time        freie und belegte Räume
  *   GET    /substitutions?date&range    Vertretungsplan (range = day | week)
  *   GET    /stats?date&time             Dashboard-Kennzahlen
+ *   GET    /me                          eigene Klasse
+ *   GET    /exams?from&to               anstehende Tests/Schularbeiten
  */
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { untisLinks } from '../db.js';
+import { award } from '../economy/service.js';
 import { publicUser, requireAuth, requireUntis } from '../middleware/auth.js';
 import { encrypt } from '../untis/crypto.js';
 import { UntisError } from '../untis/errors.js';
@@ -87,6 +90,7 @@ untisRouter.post('/link', linkLimiter, async (req, res, next) => {
 
   untisLinks.upsert({ userId: req.user.id, server, school, username, secretEnc: encrypt(password) });
   untisService.forget(req.user.id);
+  award(req.user.id, 'untis.linked', 'link');
   res.json({ user: publicUser(req.user) });
 });
 
@@ -141,3 +145,18 @@ untisRouter.get(
 );
 
 untisRouter.get('/stats', handle(async (req, untis) => untis.dashboard(resolveMoment(req.query.date, req.query.time))));
+
+/** Eigene Klasse (Schüler-Dashboard, MollyXP) */
+untisRouter.get('/me', handle(async (_req, untis) => ({ class: await untis.ownClass() })));
+
+/** Anstehende Tests/Schularbeiten der eigenen Klasse (Standard: heute + 4 Wochen) */
+untisRouter.get(
+  '/exams',
+  handle(async (req, untis) => {
+    const { date } = resolveMoment(req.query.from);
+    const from = isIsoDate(req.query.from) ? req.query.from : date;
+    const to = isIsoDate(req.query.to) ? req.query.to : addDays(from, 28);
+    if ((new Date(to) - new Date(from)) / 86_400_000 > 62) throw badRequest('Maximal 62 Tage pro Anfrage.');
+    return { from, to, ...(await untis.exams(from, to)) };
+  }),
+);

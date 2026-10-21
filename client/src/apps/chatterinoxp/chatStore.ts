@@ -1,14 +1,17 @@
 /**
- * Chat-Zustand + Socket.IO-Verbindung für chatterinoXP.
- * Die Verbindung lebt, solange das Chat-Fenster offen ist (auch minimiert).
+ * Chat-Zustand für chatterinoXP auf der gemeinsamen Socket-Verbindung (core/socket.ts).
+ * Beim Öffnen des Fensters werden Channels betreten, beim Schließen verlassen –
+ * die Verbindung selbst bleibt für Live-Updates (Coins, Abzeichen) bestehen.
  */
-import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
+import { getSocket } from '../../core/socket';
 
 export interface ChatUser {
   id: number | null;
   username: string;
   color: string;
+  /** Bis zu 2 Abzeichen-IDs, die dezent vor dem Namen erscheinen */
+  badges?: string[];
 }
 
 export interface ChatMessage {
@@ -40,8 +43,6 @@ interface ChatState {
 
   connect: () => void;
   disconnect: () => void;
-  /** Neu verbinden, z. B. nach Login/Logout (neues Cookie im Handshake). */
-  reconnect: () => void;
   openTab: (channel: string) => void;
   closeTab: (channel: string) => void;
   setActive: (channel: string) => void;
@@ -49,8 +50,8 @@ interface ChatState {
 }
 
 const MAX_MESSAGES = 500;
-let socket: Socket | null = null;
 let systemId = 0;
+let unbind: (() => void) | null = null;
 
 const system = (channel: string, text: string): ChatMessage => ({
   id: `sys-${++systemId}`,
@@ -73,10 +74,26 @@ export const useChatStore = create<ChatState>()((set, get) => {
     });
 
   const join = (channel: string) => {
-    socket?.emit('chat:join', channel, (res: { history?: ChatMessage[]; error?: string }) => {
+    getSocket().emit('chat:join', channel, (res: { history?: ChatMessage[]; error?: string }) => {
       if (res.error) return append(channel, system(channel, res.error));
       append(channel, system(channel, `Verbunden mit #${channel}`), ...(res.history ?? []));
     });
+  };
+
+  /** Begrüßung des Servers verarbeiten: Rechte übernehmen und Tabs (neu) betreten. */
+  const onHello = (hello: Hello) => {
+    const general = hello.channels[0];
+    const tabs = get().tabs.length ? get().tabs.filter((t) => hello.channels.includes(t)) : [general];
+    set({
+      connected: true,
+      channels: hello.channels,
+      readOnly: hello.readOnly,
+      me: hello.user,
+      tabs,
+      // Beim Start immer zuerst der allgemeine Chatroom
+      active: get().active && tabs.includes(get().active!) ? get().active : general,
+    });
+    tabs.forEach(join);
   };
 
   return {
@@ -91,49 +108,38 @@ export const useChatStore = create<ChatState>()((set, get) => {
     unread: {},
 
     connect() {
-      if (socket) return;
-      socket = io({ withCredentials: true });
-
-      socket.on('connect', () => set({ connected: true }));
-
-      socket.on('chat:hello', (hello: Hello) => {
-        const general = hello.channels[0];
-        const tabs = get().tabs.length ? get().tabs.filter((t) => hello.channels.includes(t)) : [general];
-        set({
-          channels: hello.channels,
-          readOnly: hello.readOnly,
-          me: hello.user,
-          tabs,
-          // Beim Start immer zuerst der allgemeine Chatroom
-          active: get().active && tabs.includes(get().active!) ? get().active : general,
-        });
-        tabs.forEach(join);
-      });
-
-      socket.on('chat:message', (msg: ChatMessage) => append(msg.channel, msg));
-
-      socket.on('chat:viewers', ({ channel, count }: { channel: string; count: number }) =>
-        set((s) => ({ viewers: { ...s.viewers, [channel]: count } })),
-      );
-
-      socket.on('disconnect', (reason) => {
+      if (unbind) return;
+      const socket = getSocket();
+      const init = () => socket.emit('chat:init', onHello);
+      const onMessage = (msg: ChatMessage) => append(msg.channel, msg);
+      const onViewers = ({ channel, count }: { channel: string; count: number }) =>
+        set((s) => ({ viewers: { ...s.viewers, [channel]: count } }));
+      const onDisconnect = (reason: string) => {
         set({ connected: false });
-        // Gewollte Trennung (reconnect nach Login/Logout) nicht als Fehler melden
+        // Gewollte Trennung (Neuverbindung nach Login/Logout) nicht als Fehler melden
         if (reason === 'io client disconnect') return;
         get().tabs.forEach((t) => append(t, system(t, 'Verbindung getrennt – versuche erneut…')));
-      });
+      };
+
+      socket.on('connect', init);
+      socket.on('chat:message', onMessage);
+      socket.on('chat:viewers', onViewers);
+      socket.on('disconnect', onDisconnect);
+      if (socket.connected) init();
+
+      unbind = () => {
+        socket.off('connect', init);
+        socket.off('chat:message', onMessage);
+        socket.off('chat:viewers', onViewers);
+        socket.off('disconnect', onDisconnect);
+      };
     },
 
     disconnect() {
-      socket?.disconnect();
-      socket = null;
+      get().tabs.forEach((t) => getSocket().emit('chat:leave', t));
+      unbind?.();
+      unbind = null;
       set({ connected: false, tabs: [], active: null, messages: {}, unread: {} });
-    },
-
-    reconnect() {
-      if (!socket) return;
-      socket.disconnect();
-      socket.connect();
     },
 
     openTab(channel) {
@@ -148,7 +154,7 @@ export const useChatStore = create<ChatState>()((set, get) => {
     closeTab(channel) {
       const { tabs, active } = get();
       if (tabs.length <= 1) return;
-      socket?.emit('chat:leave', channel);
+      getSocket().emit('chat:leave', channel);
       const rest = tabs.filter((t) => t !== channel);
       set((s) => ({
         tabs: rest,
@@ -164,7 +170,8 @@ export const useChatStore = create<ChatState>()((set, get) => {
     send(text) {
       const { active } = get();
       return new Promise((resolve) => {
-        if (!socket || !active) return resolve('Nicht verbunden.');
+        const socket = getSocket();
+        if (!socket.connected || !active) return resolve('Nicht verbunden.');
         socket.timeout(5000).emit('chat:send', { channel: active, text }, (err: Error | null, res: { error?: string }) => {
           const error = err ? 'Zeitüberschreitung beim Senden.' : (res?.error ?? null);
           if (error) append(active, system(active, error));

@@ -17,6 +17,8 @@ import iconHelp from '../../assets/icons/help.svg';
 import iconGlobe from '../../assets/icons/globe.svg';
 import iconLink from '../../assets/icons/untis-link.svg';
 import { REPO_URL } from '../../core/constants';
+import { useEconomyStore } from '../../store/economyStore';
+import { useClippyStore } from '../clippy/Clippy';
 
 /** Zusätzliche Einträge der rechten Spalte, die keine eigene App sind. */
 interface ShellLink {
@@ -30,12 +32,19 @@ const RIGHT_LINKS: ShellLink[] = [
   { id: 'untis-link', label: 'Untis-Verknüpfung', icon: iconLink, run: () => launchApp('account', { tab: 'untis' }) },
   { id: 'github', label: 'OSSXP auf GitHub', icon: iconGlobe, run: () => window.open(REPO_URL, '_blank', 'noopener') },
   { id: 'help', label: 'Hilfe und Support', icon: iconHelp, run: () => launchApp('about') },
+  {
+    id: 'clippy',
+    label: 'Clippy ein-/ausblenden',
+    icon: iconHelp,
+    run: () => useClippyStore.getState().setEnabled(!useClippyStore.getState().enabled),
+  },
 ];
 
 export function StartMenu() {
   const open = useUiStore((s) => s.startMenuOpen);
   const close = useUiStore((s) => s.closeStartMenu);
   const user = useAuthStore((s) => s.user);
+  const wallet = useEconomyStore((s) => s.wallet);
   const ref = useRef<HTMLDivElement>(null);
   const [allProgramsOpen, setAllProgramsOpen] = useState(false);
 
@@ -81,6 +90,11 @@ export function StartMenu() {
           <span className="sm-user-text">
             <span className="sm-username">{user ? user.username : 'Anmelden'}</span>
             {!user && <span className="sm-user-hint">Klicken Sie hier, um sich anzumelden</span>}
+            {user && wallet && (
+              <span className="sm-user-hint">
+                Level {wallet.level} · {wallet.coins} Coins
+              </span>
+            )}
           </span>
         </button>
       </header>

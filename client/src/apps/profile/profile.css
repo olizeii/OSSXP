@@ -1,0 +1,141 @@
+/* Steam-ähnliches Profil im XP-Look */
+
+.pf { height: 100%; overflow-y: auto; background: #f4f3ee; }
+.pf-state { padding: 30px; text-align: center; color: #555; }
+.pf-muted { color: #777; font-weight: normal; }
+
+/* Kopf mit Hintergrund-Artikel */
+.pf-hero { padding: 16px; background: linear-gradient(160deg, #0a3ab5, #2f7ff0 55%, #7fb6ff); }
+
+.pf-hero-panel {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px;
+  color: #fff;
+  background: rgba(0, 20, 60, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.pf-hero-panel .usr-avatar { margin: 4px; }
+.pf-hero-main { flex: 1; min-width: 0; }
+
+.pf-hero-main h1 {
+  margin: 0 0 4px;
+  font: bold 22px var(--xp-title-font);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), 0 0 1px #000;
+  overflow-wrap: anywhere;
+}
+
+.pf-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+
+.pf-chip {
+  padding: 1px 7px;
+  font-size: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.pf-chip.admin { background: #b8860b; border-color: #ffd970; }
+.pf-chip.untis { background: #d9560e; border-color: #ffb37a; }
+
+.pf-bio { margin: 0; white-space: pre-wrap; line-height: 1.45; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.6); }
+
+.pf-level { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 140px; }
+.pf-level-row { display: flex; align-items: center; gap: 8px; font: 18px var(--xp-title-font); }
+.pf-level small { opacity: 0.85; }
+
+.pf-xpbar {
+  width: 140px;
+  height: 12px;
+  padding: 1px;
+  background: #fff;
+  border: 1px solid #333;
+  border-radius: 3px;
+}
+
+.pf-xpbar > div {
+  height: 100%;
+  background-image: repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 9px), linear-gradient(#aef5a6, #37c639 45%, #1f9c22);
+  border-radius: 1px;
+}
+
+.pf-actions { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.pf-actions .xp-button { min-width: 140px; }
+
+/* Inhalt */
+.pf-body { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 10px; padding: 10px; }
+.pf { container-type: inline-size; }
+
+@container (max-width: 560px) {
+  .pf-body { grid-template-columns: 1fr; }
+  .pf-hero-panel { flex-wrap: wrap; }
+}
+
+.pf-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.pf-box { padding: 8px 10px 10px; background: #fff; border: 1px solid #d0d0bf; border-radius: 4px; }
+.pf-box h2 { margin: 0 0 8px; color: #0046d5; font: bold 12px var(--xp-font); }
+.pf-big { margin: 0; color: #003399; font: bold 20px var(--xp-title-font); }
+
+.pf-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+
+.pf-badge-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px;
+  text-align: center;
+  background: linear-gradient(#fff, #f1f5fd);
+  border: 1px solid #c9d6ef;
+  border-radius: 4px;
+}
+
+.pf-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.pf-badge-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 74px;
+  font-size: 10px;
+  text-align: center;
+}
+
+.pf-badge-small.locked { opacity: 0.35; filter: grayscale(1); }
+.pf-badge-small.pick { width: auto; padding: 3px; border: 2px solid transparent; border-radius: 4px; cursor: pointer; }
+.pf-badge-small.pick input { display: none; }
+.pf-badge-small.pick.on { border-color: #316ac5; background: #dbe7fb; }
+
+.pf-stats { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; margin: 0; }
+.pf-stats dt { color: #555; }
+.pf-stats dd { margin: 0; font-weight: bold; text-align: right; }
+
+/* Bearbeiten */
+.pf-editor { margin: 10px 10px 0; padding: 10px; background: #ece9d8; border: 1px solid #aca899; border-radius: 4px; }
+.pf-textarea { width: 100%; height: 64px; resize: vertical; }
+.pf-items { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+
+.pf-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 92px;
+  padding: 4px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  font: 10px var(--xp-font);
+  cursor: pointer;
+}
+
+.pf-item.on { border-color: #316ac5; background: #dbe7fb; }
+.pf-item-preview { width: 80px; height: 44px; border: 1px solid #888; border-radius: 2px; }
+.pf-item-frame { width: 34px; height: 34px; margin: 6px; border-radius: 3px; background: #9cc8f5; }

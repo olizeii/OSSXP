@@ -5,10 +5,10 @@ import icon from '../../assets/icons/account.svg';
 export default defineApp({
   id: 'account',
   title: 'Benutzerkonten',
-  description: 'Konto & Untis-Verknüpfung',
+  description: 'Profil, Abzeichen & Untis-Verknüpfung',
   icon,
   component: lazy(() => import('./Account')),
-  window: { width: 640, height: 450, minWidth: 520, minHeight: 360 },
+  window: { width: 860, height: 580, minWidth: 560, minHeight: 380 },
   requires: { auth: true },
   placement: { desktop: true, startMenu: 'right' },
 });

@@ -30,6 +30,14 @@ export interface MessageBox {
  */
 export type PowerState = 'on' | 'shutdownMenu' | 'standby' | 'shuttingDown' | 'off';
 
+/** Sprechblase am Infobereich der Taskleiste (wie XP-Benachrichtigungen). */
+export interface Balloon {
+  id: number;
+  title: string;
+  text: string;
+  icon: 'coins' | 'level' | 'badge' | 'info';
+}
+
 interface UiStore {
   startMenuOpen: boolean;
   toggleStartMenu: () => void;
@@ -45,9 +53,14 @@ interface UiStore {
 
   power: PowerState;
   setPower: (power: PowerState) => void;
+
+  balloons: Balloon[];
+  notify: (b: Omit<Balloon, 'id'>) => void;
+  dismissBalloon: (id: number) => void;
 }
 
 let messageId = 1;
+let balloonId = 1;
 
 export const useUiStore = create<UiStore>()((set) => ({
   startMenuOpen: false,
@@ -71,4 +84,13 @@ export const useUiStore = create<UiStore>()((set) => ({
 
   power: 'on',
   setPower: (power) => set({ power, startMenuOpen: false }),
+
+  balloons: [],
+  notify: (b) => {
+    const id = balloonId++;
+    // Höchstens 3 gleichzeitig; jede verschwindet nach 6 Sekunden
+    set((s) => ({ balloons: [...s.balloons.slice(-2), { ...b, id }] }));
+    setTimeout(() => useUiStore.getState().dismissBalloon(id), 6000);
+  },
+  dismissBalloon: (id) => set((s) => ({ balloons: s.balloons.filter((b) => b.id !== id) })),
 }));

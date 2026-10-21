@@ -1,9 +1,11 @@
 /**
- * UntisXP – das komplette UntisDashboard im Look des XP-Explorers:
+ * UtisXP – das komplette UntisDashboard im Look des XP-Explorers:
+ *  - Startansicht „Mein Tag“: Schüler-Dashboard mit nächsten Stunden, Ausfällen und Tests
  *  - Symbolleiste mit Zurück/Vor (Verlauf), Startseite und Aktualisieren
  *  - Adressleiste mit Pfad und globaler Suche (Strg+K) über Lehrkräfte, Klassen und Räume
  *  - blauer Aufgabenbereich links mit allen Ansichten
- *  - Ansichten: Dashboard, Mein Stundenplan, Lehrkräfte, Klassen, Räume, Freie Räume, Vertretungen
+ *  - Ansichten: Mein Tag, Schul-Dashboard, Mein Stundenplan, Lehrkräfte, Klassen, Räume, Freie Räume, Vertretungen
+ *  - Lehrerkürzel erscheinen mit vollem Namen (Abgleich mit dem Lehrerverzeichnis der HTL-HL, serverseitig)
  *
  * Tastatur: Strg+K = Suche · Alt+← / Alt+→ = Zurück / Vor
  */
@@ -20,12 +22,14 @@ import { Dashboard } from './views/Dashboard';
 import { ElementView } from './views/ElementView';
 import { FreeRooms } from './views/FreeRooms';
 import { Substitutions } from './views/Substitutions';
+import { Today } from './views/Today';
 import { Week } from './views/Week';
 import '../account/account.css';
 import './untisxp.css';
 
 const NAV: { view: View; glyph: GlyphName; hint: string }[] = [
-  { view: 'dashboard', glyph: 'dashboard', hint: 'Überblick über den Schultag' },
+  { view: 'today', glyph: 'live', hint: 'Deine nächsten Stunden, Ausfälle und Tests' },
+  { view: 'dashboard', glyph: 'dashboard', hint: 'Überblick über den ganzen Schultag' },
   { view: 'week', glyph: 'week', hint: 'Dein eigener Wochenplan' },
   { view: 'teacher', glyph: 'teacher', hint: 'Wo ist eine Lehrkraft gerade?' },
   { view: 'class', glyph: 'class', hint: 'Wo ist eine Klasse gerade?' },
@@ -36,7 +40,8 @@ const NAV: { view: View; glyph: GlyphName; hint: string }[] = [
 
 export default function UntisXP({ windowId }: AppWindowProps) {
   const untis = useAuthStore((s) => s.user?.untis);
-  const [history, setHistory] = useState<{ stack: Route[]; index: number }>({ stack: [{ view: 'dashboard' }], index: 0 });
+  // Start immer auf dem Schüler-Dashboard „Mein Tag“
+  const [history, setHistory] = useState<{ stack: Route[]; index: number }>({ stack: [{ view: 'today' }], index: 0 });
   const [moment, setMomentState] = useState<MomentChoice>({ date: null, time: null });
   const [refreshKey, setRefreshKey] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -84,7 +89,7 @@ export default function UntisXP({ windowId }: AppWindowProps) {
   }, [route, master.data]);
 
   useEffect(() => {
-    useWindowStore.getState().setTitle(windowId, `UntisXP – ${element ? element.name : VIEW_LABELS[route.view]}`);
+    useWindowStore.getState().setTitle(windowId, `UtisXP – ${element ? element.name : VIEW_LABELS[route.view]}`);
   }, [windowId, route.view, element]);
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -103,7 +108,8 @@ export default function UntisXP({ windowId }: AppWindowProps) {
           <ToolButton label="Zurück" icon="back" disabled={!canBack} onClick={back} />
           <ToolButton label="Vor" icon="forward" disabled={!canForward} onClick={forward} compact />
           <span className="ux-tool-sep" />
-          <ToolButton label="Dashboard" icon="home" onClick={() => navigate({ view: 'dashboard' })} />
+          <ToolButton label="Mein Tag" icon="home" onClick={() => navigate({ view: 'today' })} />
+          <ToolButton label="Schul-Dashboard" icon="week" onClick={() => navigate({ view: 'dashboard' })} compact />
           <ToolButton
             label="Aktualisieren"
             icon="refresh"
@@ -122,7 +128,7 @@ export default function UntisXP({ windowId }: AppWindowProps) {
           <div className="ux-address-field">
             <Glyph name={NAV.find((n) => n.view === route.view)!.glyph} />
             <span>
-              UntisXP › {VIEW_LABELS[route.view]}
+              UtisXP › {VIEW_LABELS[route.view]}
               {element && (
                 <>
                   {' '}› <b>{element.name}</b>
@@ -192,6 +198,7 @@ export default function UntisXP({ windowId }: AppWindowProps) {
 
           {/* ── Inhalt ── */}
           <main className="ux-content xp-scroll" key={refreshKey}>
+            {route.view === 'today' && <Today />}
             {route.view === 'dashboard' && <Dashboard />}
             {route.view === 'week' && <Week />}
             {(route.view === 'teacher' || route.view === 'class' || route.view === 'room') && <ElementView key={route.view} type={route.view} />}

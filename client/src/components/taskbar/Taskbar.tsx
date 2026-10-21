@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { apps } from '../../apps/registry';
 import { launchApp } from '../../core/launcher';
 import { useAuthStore } from '../../store/authStore';
+import { useEconomyStore } from '../../store/economyStore';
 import { useUiStore } from '../../store/uiStore';
+import { CoinIcon } from '../user/UserBits';
 import { useWindowStore } from '../../store/windowStore';
 import { WinFlag } from '../xp/Glyphs';
 
@@ -59,10 +61,21 @@ export function Taskbar() {
 
 function SystemTray() {
   const user = useAuthStore((s) => s.user);
+  const wallet = useEconomyStore((s) => s.wallet);
   const now = useClock();
 
   return (
     <div className="tray">
+      <Balloons />
+      {wallet && (
+        <button
+          className="tray-coins"
+          title={`Level ${wallet.level} · ${wallet.levelXp}/${wallet.levelSpan} XP – zum Punkteshop`}
+          onClick={() => launchApp('shop')}
+        >
+          <CoinIcon /> {wallet.coins}
+        </button>
+      )}
       <button
         className="tray-icon"
         title={user ? `Angemeldet als ${user.username}` : 'Nicht angemeldet – klicken zum Anmelden'}
@@ -79,6 +92,33 @@ function SystemTray() {
       >
         {now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
       </time>
+    </div>
+  );
+}
+
+/** XP-Sprechblasen über dem Infobereich (Coins, Level-Aufstieg, neue Abzeichen). */
+function Balloons() {
+  const balloons = useUiStore((s) => s.balloons);
+  const dismiss = useUiStore((s) => s.dismissBalloon);
+  if (balloons.length === 0) return null;
+  const star = (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+      <path d="M8 1l2.1 4.3 4.7.7-3.4 3.3.8 4.7L8 11.8 3.8 14l.8-4.7L1.2 6l4.7-.7Z" fill="#f5c518" stroke="#8a6400" strokeLinejoin="round" />
+    </svg>
+  );
+  return (
+    <div className="tray-balloons">
+      {balloons.map((b) => (
+        <div key={b.id} className="tray-balloon" role="status" onClick={() => dismiss(b.id)}>
+          <button className="tray-balloon-close" aria-label="Schließen">
+            ×
+          </button>
+          <b>
+            <span className="tray-balloon-icon">{b.icon === 'coins' ? <CoinIcon /> : star}</span> {b.title}
+          </b>
+          <span>{b.text}</span>
+        </div>
+      ))}
     </div>
   );
 }

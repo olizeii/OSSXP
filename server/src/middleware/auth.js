@@ -59,6 +59,14 @@ export function requireUntis(req, res, next) {
   next();
 }
 
+/** Admins werden über ADMIN_USERNAMES in der .env festgelegt (z. B. für NewsXP). */
+export const isAdmin = (user) => Boolean(user) && config.adminUsernames.includes(user.username.toLowerCase());
+
+export function requireAdmin(req, res, next) {
+  if (!isAdmin(req.user)) return res.status(403).json({ error: 'Nur für Administratoren.' });
+  next();
+}
+
 /** Öffentliche Sicht auf einen User – wird an den Client geschickt (nie password_hash!). */
 export function publicUser(user) {
   const link = untisLinks.findByUser(user.id);
@@ -66,6 +74,7 @@ export function publicUser(user) {
     id: user.id,
     username: user.username,
     color: user.color,
+    isAdmin: isAdmin(user),
     avatar: user.avatar ?? null,
     createdAt: user.created_at,
     untisLinked: Boolean(link),

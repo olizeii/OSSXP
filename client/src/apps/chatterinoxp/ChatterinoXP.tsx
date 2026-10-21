@@ -4,6 +4,7 @@
  * farbigen Namen und 7TV-/BTTV-Emotes, Eingabezeile mit Tab-Vervollständigung.
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { UserName } from '../../components/user/UserBits';
 import type { AppWindowProps } from '../../core/types';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
@@ -15,27 +16,17 @@ import './chatterino.css';
 const MAX_LENGTH = 500;
 
 export default function ChatterinoXP({ windowId }: AppWindowProps) {
-  const userId = useAuthStore((s) => s.user?.id ?? null);
   const username = useAuthStore((s) => s.user?.username ?? null);
   const chat = useChatStore();
   const emotes = useEmotes();
   const [tooltip, setTooltip] = useState<{ emote: Emote; x: number; y: number } | null>(null);
 
-  // Verbinden beim Öffnen, trennen beim Schließen des Fensters
+  // Channels betreten beim Öffnen, verlassen beim Schließen des Fensters.
+  // (Login/Logout verbindet die gemeinsame Verbindung in App.tsx neu.)
   useEffect(() => {
     useChatStore.getState().connect();
     return () => useChatStore.getState().disconnect();
   }, []);
-
-  // Login/Logout → neu verbinden, damit der Server den neuen Status kennt
-  const firstRun = useRef(true);
-  useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
-    useChatStore.getState().reconnect();
-  }, [userId]);
 
   // Fenstertitel wie bei Chatterino: „chatterinoXP – <user>“
   useEffect(() => {
@@ -219,9 +210,7 @@ const MessageLine = memo(function MessageLine({ msg, emotes, me }: { msg: ChatMe
   return (
     <div className={`ct-msg ${mentioned ? 'highlight' : ''}`}>
       <span className="ct-time">{time}</span>{' '}
-      <span className="ct-name" style={{ color: msg.user.color }}>
-        {msg.user.username}
-      </span>
+      <UserName className="ct-name" username={msg.user.username} color={msg.user.color} badges={msg.user.badges} />
       <span className="ct-colon">:</span>{' '}
       {tokens.map((t, i) => {
         switch (t.type) {

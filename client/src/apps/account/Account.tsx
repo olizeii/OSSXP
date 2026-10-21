@@ -1,6 +1,6 @@
 /**
- * Benutzerkonten (wie die XP-Systemsteuerung): Profil/Chat-Farbe und Untis-Verknüpfung.
- * Öffnen mit launchApp('account', { tab: 'untis' }) springt direkt zur Verknüpfung.
+ * Benutzerkonten (wie die XP-Systemsteuerung): Steam-ähnliches Profil, Chat-Farbe, Profilbild
+ * und Untis-Verknüpfung. launchApp('account', { tab: 'untis' }) springt direkt zur Verknüpfung.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '../../core/api';
@@ -8,17 +8,23 @@ import { AVATAR_PRESETS, avatarUrl, fileToAvatar } from '../../core/avatars';
 import { launchApp } from '../../core/launcher';
 import type { AppWindowProps } from '../../core/types';
 import { useAuthStore, type User } from '../../store/authStore';
+import { ProfileView } from '../profile/ProfileView';
+import iconProfile from '../../assets/icons/profile.svg';
+import iconShop from '../../assets/icons/shop.svg';
 import iconLink from '../../assets/icons/untis-link.svg';
 import iconUntis from '../../assets/icons/untisxp.svg';
 import './account.css';
 
-type Tab = 'profile' | 'picture' | 'untis';
+type Tab = 'overview' | 'profile' | 'picture' | 'untis';
+
+/** Standardwerte der Untis-Verknüpfung – OSSXP startet an der HTL Hollabrunn. */
+export const UNTIS_DEFAULTS = { server: 'https://htl-hl.webuntis.com', school: 'htl-hl' };
 
 const COLORS = ['#FF0000', '#FF7F50', '#DAA520', '#9ACD32', '#00FF7F', '#2E8B57', '#5F9EA0', '#1E90FF', '#8A2BE2', '#FF69B4', '#D2691E', '#B22222'];
 
 export default function Account({ params }: AppWindowProps) {
   const user = useAuthStore((s) => s.user);
-  const [tab, setTab] = useState<Tab>((params?.tab as Tab) ?? 'profile');
+  const [tab, setTab] = useState<Tab>((params?.tab as Tab) ?? 'overview');
 
   // Wird die (Single-Instance-)App erneut mit anderem Tab geöffnet → umschalten
   useEffect(() => {
@@ -33,6 +39,9 @@ export default function Account({ params }: AppWindowProps) {
         <div className="cp-box">
           <div className="cp-box-title">Benutzeraufgaben</div>
           <div className="cp-box-body">
+            <button className={`cp-task ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
+              <img src={iconProfile} alt="" /> Mein Profil
+            </button>
             <button className={`cp-task ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>
               <img src={avatarUrl(user.avatar)} alt="" /> Konto &amp; Chat-Farbe
             </button>
@@ -47,14 +56,22 @@ export default function Account({ params }: AppWindowProps) {
         <div className="cp-box">
           <div className="cp-box-title">Siehe auch</div>
           <div className="cp-box-body">
+            <button className="cp-task" onClick={() => launchApp('shop')}>
+              <img src={iconShop} alt="" /> Punkteshop
+            </button>
             <button className="cp-task" onClick={() => launchApp('untisxp')}>
-              <img src={iconUntis} alt="" /> UntisXP öffnen
+              <img src={iconUntis} alt="" /> UtisXP öffnen
             </button>
           </div>
         </div>
       </aside>
 
-      <main className="cp-content xp-scroll">
+      {tab === 'overview' && (
+        <main className="cp-content cp-content-flush">
+          <ProfileView username={user.username} />
+        </main>
+      )}
+      <main className="cp-content xp-scroll" hidden={tab === 'overview'}>
         {tab === 'profile' && <ProfileTab user={user} onChangePicture={() => setTab('picture')} />}
         {tab === 'picture' && <PictureTab user={user} onDone={() => setTab('profile')} />}
         {tab === 'untis' && <UntisTab user={user} />}
@@ -207,7 +224,7 @@ function PictureTab({ user, onDone }: { user: User; onDone: () => void }) {
 
 function UntisTab({ user }: { user: User }) {
   const setUser = useAuthStore((s) => s.setUser);
-  const [form, setForm] = useState({ server: '', school: '', username: '', password: '' });
+  const [form, setForm] = useState({ ...UNTIS_DEFAULTS, username: '', password: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState<'live' | 'demo'>('live');
@@ -226,7 +243,7 @@ function UntisTab({ user }: { user: User }) {
     try {
       const res = await api<{ user: User }>('/untis/link', { method: 'POST', body: form });
       setUser(res.user);
-      setForm({ server: '', school: '', username: '', password: '' });
+      setForm({ ...UNTIS_DEFAULTS, username: '', password: '' });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -243,7 +260,7 @@ function UntisTab({ user }: { user: User }) {
     <>
       <h1 className="cp-heading">Untis-Verknüpfung</h1>
       <p>
-        Verknüpfen Sie Ihr OSSXP-Konto mit Ihrem WebUntis-Zugang, um <b>UntisXP</b> zu verwenden. Ihr Untis-Passwort wird
+        Verknüpfen Sie Ihr OSSXP-Konto mit Ihrem WebUntis-Zugang, um <b>UtisXP</b> und das Hochladen in <b>MollyXP</b> zu verwenden. Ihr Untis-Passwort wird
         geprüft und anschließend verschlüsselt auf dem Server gespeichert.
       </p>
       {mode === 'demo' && (
@@ -267,7 +284,7 @@ function UntisTab({ user }: { user: User }) {
           </div>
           <div className="dialog-buttons" style={{ justifyContent: 'flex-start', padding: '8px 0' }}>
             <button className="xp-button default" onClick={() => launchApp('untisxp')}>
-              UntisXP öffnen
+              UtisXP öffnen
             </button>
             <button className="xp-button" onClick={unlink}>
               Verknüpfung aufheben

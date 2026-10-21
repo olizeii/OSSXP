@@ -351,6 +351,61 @@
 .ux-chart-label { position: absolute; bottom: -16px; font-size: 10px; color: #555; }
 .ux-chart > p { margin-top: 20px; }
 
+/* ─── Mein Tag ─────────────────────────────────────────────────────────── */
+
+.ux-today-kpis { display: flex; gap: 6px; }
+
+.ux-mini-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 86px;
+  padding: 4px 8px;
+  background: linear-gradient(#fff, #f4f3ee);
+  border: 1px solid #d0d0bf;
+  border-radius: 4px;
+}
+
+.ux-mini-kpi b { color: #003399; font: bold 20px var(--xp-title-font); }
+.ux-mini-kpi.red b { color: #b01010; }
+.ux-mini-kpi.amber b { color: #b86a00; }
+.ux-mini-kpi span { color: #666; font-size: 10px; white-space: nowrap; }
+
+.ux-now { display: flex; flex-direction: column; gap: 8px; }
+.ux-now-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+
+.ux-next-list { margin: 10px 0 0; padding: 0; list-style: none; border-top: 1px solid #e4e2d6; }
+.ux-next-list li { display: flex; align-items: center; gap: 10px; padding: 5px 2px; border-bottom: 1px solid #efeee7; }
+
+.ux-exams { margin: 0; padding: 0; list-style: none; }
+
+.ux-exams li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #efeee7;
+}
+
+.ux-exams li.soon { background: #fff6f4; }
+
+.ux-exam-date {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 42px;
+  padding: 2px 0 3px;
+  border: 1px solid #b9cdef;
+  border-top: 6px solid #e8601c;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.ux-exam-date b { font: bold 16px var(--xp-title-font); line-height: 1.1; }
+.ux-exam-date span { color: #666; font-size: 10px; }
+.ux-exam-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
 /* ─── Kacheln (Explorer-Ansicht „Kacheln“) ─────────────────────────────── */
 
 .ux-tiles {

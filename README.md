@@ -1,8 +1,20 @@
 # OSSXP
 
-Eine Web-Desktop-Umgebung im Windows-XP-Design („Luna“): Fenster, Taskleiste, Startmenü, Login –
-plus die Apps **UntisXP** (Stundenplan-Dashboard), **chatterinoXP** (Echtzeit-Chat mit 7TV- & BTTV-Emotes)
-und das „vorinstallierte“ Spiel **SudoXP** (Sudoku).
+Eine Web-Desktop-Umgebung im Windows-XP-Design („Luna“) für Schüler:innen – Startpunkt ist die **HTL Hollabrunn**.
+Fenster, Taskleiste, Startmenü, Login und ein Steam-ähnliches Ökosystem aus **Profilen, Level, Coins, Abzeichen und Shop**.
+
+| App | Was sie kann |
+| --- | --- |
+| **UtisXP** | Schüler-Dashboard „Mein Tag“ (nächste Stunden, Ausfälle, Tests), Lehrer-/Klassen-/Raumsuche mit Live-Status, freie Räume, Vertretungen – Lehrerkürzel mit vollem Namen von der HTL-HL-Webseite |
+| **chatterinoXP** | Echtzeit-Chat mit 7TV- & BTTV-Emotes, Abzeichen neben Namen |
+| **redXP** | Forum mit Subreddits (z. B. pro Klasse), Up-/Downvotes, Kommentarbäume |
+| **MollyXP** | Tests & Mitschriften pro Klasse teilen – Upload nur in die von Untis bestätigte eigene Klasse, standardmäßig anonym |
+| **NewsXP** | News & Poster der Schule (Veröffentlichen nur für Admins) |
+| **SudoXP** | Sudoku: klassisch oder tägliches Rätsel mit globaler Bestenliste |
+| **Benutzerkonten / Profil / Punkteshop** | Steam-ähnliches Profil, Abzeichen-Vitrine, Hintergründe & Rahmen kaufen |
+| **Clippy** | schwebender Desktop-Assistent mit Tipps (abschaltbar) |
+
+Die Architektur (Datenbankschema, Economy, State-Management) steht in [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md).
 
 - **Frontend:** React 19 + Vite + TypeScript, State mit Zustand
 - **Backend:** Node.js + Express 5, Socket.IO, SQLite (better-sqlite3)
@@ -32,20 +44,28 @@ OSSXP/
 │     │  ├─ windowStore.ts   # Fenster: Position, Größe, z-Index, min/max (persistiert)
 │     │  ├─ desktopStore.ts  # Positionen der Desktop-Icons (persistiert)
 │     │  ├─ authStore.ts     # eingeloggter User
-│     │  └─ uiStore.ts       # Startmenü, Login-Dialog, Meldungen, Power-Zustand
+│     │  ├─ economyStore.ts  # ⭐ Coins, Level, Abzeichen, Inventar – live per Socket synchron
+│     │  └─ uiStore.ts       # Startmenü, Dialoge, Meldungen, Tray-Sprechblasen, Power-Zustand
 │     ├─ components/
 │     │  ├─ desktop/         # Desktop + Icons
 │     │  ├─ window/          # Window, WindowManager, Titelleisten-Buttons
 │     │  ├─ taskbar/         # Taskleiste, Schnellstart, Tray-Uhr
 │     │  ├─ startmenu/       # Startmenü inkl. „Alle Programme“
 │     │  ├─ dialogs/         # Login, Meldungsfenster, „Computer ausschalten“
+│     │  ├─ user/UserBits.tsx# klickbare Namen, Abzeichen-Medaillen, Level-Ring, Avatar-Rahmen
+│     │  ├─ clippy/          # Clippy, der Desktop-Assistent
 │     │  └─ xp/Glyphs.tsx    # XP-Logo, Power-/Abmelden-Symbole …
 │     ├─ apps/
 │     │  ├─ registry.ts      # ⭐ Hier werden alle Apps registriert
-│     │  ├─ untisxp/         # UntisXP
+│     │  ├─ untisxp/         # UtisXP (Mein Tag, Dashboard, Suche, Vertretungen …)
 │     │  ├─ chatterinoxp/    # chatterinoXP
-│     │  ├─ sudoxp/          # SudoXP (Sudoku-Generator + Spiel)
-│     │  ├─ account/         # Benutzerkonten (Chat-Farbe, Untis verknüpfen)
+│     │  ├─ redxp/           # redXP (Forum)
+│     │  ├─ mollyxp/         # MollyXP (Tests & Mitschriften)
+│     │  ├─ newsxp/          # NewsXP
+│     │  ├─ sudoxp/          # SudoXP (klassisch + tägliches Sudoku mit Bestenliste)
+│     │  ├─ profile/         # Steam-ähnliches Profilfenster (openProfile(username))
+│     │  ├─ shop/            # Punkteshop
+│     │  ├─ account/         # Benutzerkonten (Mein Profil, Chat-Farbe, Bild, Untis)
 │     │  └─ about/           # Über OSSXP
 │     ├─ assets/             # XP-Icons (SVG), Avatare, Wallpaper
 │     └─ styles/             # xp.css (Luna-Theme), desktop/taskbar/startmenu/dialogs.css
@@ -56,13 +76,22 @@ OSSXP/
       ├─ config.js           # Konfiguration aus .env
       ├─ db.js               # SQLite-Schema + Repositories (users, untis_links, messages)
       ├─ middleware/auth.js  # JWT-Cookie, requireAuth, requireUntis
+      ├─ realtime.js         # Live-Updates an einzelne User (Socket-Raum user:<id>)
+      ├─ uploads.js          # Datei-Uploads (multer) für MollyXP/NewsXP
       ├─ routes/
       │  ├─ auth.js          # /api/auth  register | login | logout | me
-      │  ├─ untis.js         # /api/untis status | link | timetable | timegrid
+      │  ├─ economy.js       # /api/economy (Wallet, Shop) + /api/profiles
+      │  ├─ untis.js         # /api/untis status | link | timetable | master | element | exams …
+      │  ├─ red.js           # /api/red   Subreddits, Beiträge, Kommentare, Votes
+      │  ├─ molly.js         # /api/molly Schulen, Klassen, Uploads
+      │  ├─ news.js          # /api/news
+      │  ├─ sudoku.js        # /api/sudoku Tagesrätsel + Bestenliste
       │  └─ emotes.js        # /api/emotes (7TV + BTTV, gecached)
-      ├─ untis/              # client.js (JSON-RPC), service.js, mock.js, crypto.js, errors.js
+      ├─ economy/            # ⭐ catalog.js (Belohnungen, Abzeichen, Artikel) + service.js (award, Level, Shop)
+      ├─ untis/              # WebUntis-Client, Service, Demo-Schule, Lehrernamen-Abgleich (teacher-names.js)
+      ├─ games/sudoku.js     # Sudoku-Generator für das Tagesrätsel
       ├─ emotes/providers.js # 7TV-/BTTV-Loader
-      └─ chat/socket.js      # Echtzeit-Chat, Schreibrecht nur mit Login
+      └─ chat/socket.js      # Echtzeit-Chat + persönliche Live-Updates
 ```
 
 ## Schnellstart
@@ -106,6 +135,9 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
 | App starten | Doppelklick auf Desktop-Icon, Startmenü, Schnellstart oder „Alle Programme“ |
 | Anmelden / Registrieren | Startmenü → Kopfbereich „Anmelden“ (oder Tray-Symbol unten rechts) |
 | Untis verknüpfen | Startmenü → „Untis-Verknüpfung“ (App *Benutzerkonten*) |
+| Profil ansehen | Auf einen Namen klicken (Chat, redXP, Bestenliste, MollyXP) – eigenes Profil unter *Benutzerkonten → Mein Profil* |
+| Coins ausgeben | Punkteshop (oder Klick auf die Coins unten rechts in der Taskleiste) |
+| Clippy ein/aus | Rechtsklick auf Clippy oder Startmenü → „Clippy ein-/ausblenden“ |
 | Profilbild ändern | Startmenü → auf das eigene Bild klicken → „Eigenes Bild ändern“ (Galerie oder eigenes Bild hochladen) |
 | Desktop-Icons verschieben | Icon ziehen – rastet im Raster ein; Rechtsklick auf den Desktop → „Symbole automatisch anordnen“ |
 | Seite schließen | Startmenü → „Seite schließen“ → klassischer „Computer ausschalten“-Dialog |
@@ -120,7 +152,11 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
   Schüler-Accounts ohne Leserechte bekommen automatische Fallbacks (Lehrkräfte aus der Wochenansicht, Vertretungen aus den Stundenplänen).
   Nur eingeloggt **und** mit verknüpftem Untis-Account. Sonst erscheint eine XP-Meldung mit „Anmelden“ bzw. „Jetzt verknüpfen“; nach dem Login startet die App automatisch.
 - **chatterinoXP**: für alle offen. Gäste sind im **Zuschauer-Modus** (nur lesen) – das erzwingt der Server, nicht nur die UI. Beim Start ist immer der allgemeine Channel aktiv.
-- **SudoXP**: für alle spielbar. Drei Schwierigkeitsgrade, jedes Rätsel ist zufällig und eindeutig lösbar.
+- **redXP / MollyXP / NewsXP**: Lesen ohne Login. Schreiben/Abstimmen mit Login; Hochladen in MollyXP zusätzlich nur mit
+  Untis-Verknüpfung (Klasse wird über Untis geprüft); News veröffentlichen nur mit `ADMIN_USERNAMES`.
+- **SudoXP**: für alle spielbar. Im täglichen Sudoku erscheint man ohne Login als „Anonym“.
+  Coins/Abzeichen gibt es nur mit Konto.
+- **Klassisches SudoXP**: Drei Schwierigkeitsgrade, jedes Rätsel ist zufällig und eindeutig lösbar.
   Tasten: 1–9 setzen · Entf löschen · Pfeiltasten · N = Notizen · H = Tipp · Strg+Z = Rückgängig · F2 = Neues Spiel.
   Spielstand und Bestzeiten werden im Browser gespeichert.
 - Beim Abmelden werden Fenster geschlossen, deren Voraussetzungen nicht mehr erfüllt sind.
@@ -166,6 +202,10 @@ Aus anderem Code heraus öffnen: `launchApp('meine-app', { beliebige: 'parameter
 
 ## Untis-Hinweise
 
+- Das Verknüpfungsformular ist für die HTL Hollabrunn vorausgefüllt (`https://htl-hl.webuntis.com`, Schule `htl-hl`) – änderbar.
+- **Lehrernamen:** Untis liefert Schüler-Accounts oft nur Kürzel. Für `htl-hl` gleicht der Server sie automatisch mit dem
+  Lehrerverzeichnis der Schulwebseite ab (htl-hl.ac.at/web/team). Falsche Zuordnungen in `server/.env` korrigieren:
+  `UNTIS_TEACHER_NAMES="KÜRZEL=Nachname Vorname; …"`. Andere Schulen: `TEACHER_DIRECTORY_<SCHULE>=url`.
 - **Server** und **Schule** stehen in der WebUntis-Adresse, z. B. `https://nessa.webuntis.com/WebUntis/?school=abc-schule`.
   Die komplette Adresse kann auch einfach ins Server-Feld kopiert werden.
 - Schulen, die **nur** SSO (z. B. Microsoft-Login) erlauben, funktionieren mit Passwort-Login nicht.

@@ -140,7 +140,8 @@ export const ELEMENT_LABELS: Record<ElementType, { singular: string; plural: str
 };
 
 export const VIEW_LABELS: Record<View, string> = {
-  dashboard: 'Dashboard',
+  today: 'Mein Tag',
+  dashboard: 'Schul-Dashboard',
   week: 'Mein Stundenplan',
   teacher: 'Lehrkräfte',
   class: 'Klassen',

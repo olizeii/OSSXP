@@ -14,6 +14,7 @@ import { UntisError, isPermissionError, toUntisError } from './errors.js';
 import { MockUntisSource } from './mock.js';
 import { LiveUntisSource, MAX_CONCURRENCY } from './source-live.js';
 import { computeStatus, deriveSubstitutions } from './status.js';
+import { loadTeacherDirectory, matchTeacherNames, parseOverrides } from './teacher-names.js';
 import { addDays, isIsoDate, isoWeekday, parseTime, startOfWeek, zonedNow } from './time.js';
 
 const MINUTE = 60_000;
@@ -124,7 +125,38 @@ export function untisFor(link) {
       }
       if (rooms.length === 0) rooms = deriveElements('room', week);
     }
-    return { teachers, classes, rooms, subjects, timegrid, teacherSource };
+    const named = await nameTeachers(teachers);
+    return { teachers: named.teachers, classes, rooms, subjects, timegrid, teacherSource, teacherNames: named.info };
+  }
+
+  /**
+   * Volle Namen für Lehrkräfte, die in Untis nur ein Kürzel haben – aus dem Lehrerverzeichnis
+   * der Schulwebseite (HTL-HL voreingestellt) und manuellen Korrekturen (UNTIS_TEACHER_NAMES).
+   */
+  async function nameTeachers(teachers) {
+    const hasName = (t) => t.longName && t.longName !== t.name;
+    const unnamed = teachers.filter((t) => !hasName(t));
+    const alreadyNamed = teachers.length - unnamed.length;
+    if (unnamed.length === 0) return { teachers, info: { source: 'untis', named: alreadyNamed, uncertain: 0 } };
+
+    const overrides = parseOverrides(config.untis.teacherNameOverrides);
+    const directory = await loadTeacherDirectory(config.untis.teacherDirectories[link.school.toLowerCase()]);
+    if (directory.length === 0 && Object.keys(overrides).length === 0) {
+      return { teachers, info: { source: 'none', named: alreadyNamed, uncertain: 0 } };
+    }
+
+    const matches = matchTeacherNames(unnamed.map((t) => t.name), directory, overrides);
+    let named = alreadyNamed;
+    let uncertain = 0;
+    const result = teachers.map((t) => {
+      const match = hasName(t) ? undefined : matches.get(t.name);
+      if (!match) return t;
+      const unsure = Boolean(match.partial) || match.confidence === 'medium' || match.confidence === 'low';
+      named++;
+      if (unsure) uncertain++;
+      return { ...t, longName: match.longName, nameUncertain: unsure || undefined };
+    });
+    return { teachers: result, info: { source: 'directory', named, uncertain } };
   }
 
   const masterData = () => cached('master', TTL.master, loadMasterData);
@@ -308,7 +340,55 @@ export function untisFor(link) {
     return (await masterData()).timegrid;
   }
 
-  return { masterData, dayLessons, elementStatus, freeRooms, substitutions, dashboard, ownTimetable, timegrid };
+  /** Klasse des eingeloggten Untis-Accounts (für MollyXP-Uploads und das Schüler-Dashboard). */
+  async function ownClass() {
+    const [own, master] = await Promise.all([cached('own', TTL.master, () => source.getOwnElement()), masterData()]);
+    const classId = own.type === 'class' ? own.id : own.klasseId;
+    const cls = master.classes.find((c) => c.id === classId);
+    if (!cls) throw new UntisError('forbidden', 'Untis liefert für dieses Konto keine Klasse (z. B. bei Lehrer-Accounts).');
+    return { id: cls.id, name: cls.name, longName: cls.longName, school: link.school };
+  }
+
+  /**
+   * Anstehende Tests/Schularbeiten. Zuerst die Prüfungs-API von WebUntis, sonst als Fallback
+   * alle Stunden im eigenen Stundenplan, die als Prüfung markiert sind oder so heißen.
+   */
+  async function exams(from, to) {
+    return cached(`exams:${from}:${to}`, TTL.substitutions, async () => {
+      let cls = null;
+      try {
+        cls = await ownClass();
+      } catch {
+        /* kein Klassen-Account – nur Fallback */
+      }
+      if (cls && source.getExams && !denied.has('exams')) {
+        try {
+          return { items: await source.getExams(cls.id, from, to), source: 'api' };
+        } catch (err) {
+          if (!isPermissionError(err) && err.kind !== 'network') throw err;
+          denied.add('exams');
+        }
+      }
+      const lessons = await ownTimetable(from, to);
+      const EXAM_RE = /(schularbeit|test|prüfung|klausur|\bsa\b|\bmat\b)/i;
+      const items = lessons
+        .filter((l) => l.lessonType === 'ex' || EXAM_RE.test(`${l.text ?? ''} ${l.info ?? ''} ${l.substText ?? ''}`))
+        .map((l) => ({
+          id: `l-${l.id}`,
+          date: l.date,
+          start: l.start,
+          end: l.end,
+          subject: l.subjects[0]?.name ?? '',
+          subjectLong: l.subjects[0]?.longName,
+          name: l.text || l.info || 'Prüfung',
+          teachers: l.teachers.map((t) => t.name),
+          rooms: l.rooms.map((r) => r.name),
+        }));
+      return { items, source: 'derived' };
+    });
+  }
+
+  return { masterData, dayLessons, elementStatus, freeRooms, substitutions, dashboard, ownTimetable, timegrid, ownClass, exams };
 }
 
 export const untisService = {

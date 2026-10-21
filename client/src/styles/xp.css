@@ -283,6 +283,40 @@ body.xp-dragging .window-body { pointer-events: none; }
   color: #555;
 }
 
+/* ─── Gemeinsame App-Helfer (von mehreren Apps genutzt) ───────────────── */
+
+.ux-muted { color: #6f6f6f; }
+.ux-nowrap { white-space: nowrap; }
+
+.ux-link {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--xp-link);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ux-link:hover { text-decoration: underline; }
+
+/* Symbolleisten-Button (Explorer) */
+.ux-tool {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 7px 0 3px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font: 11px var(--xp-font);
+  cursor: default;
+}
+
+.ux-tool:not(:disabled):hover { border-color: #cecec3; background: linear-gradient(to bottom, #fff, #f3f3ee); box-shadow: inset 0 -1px #d8d2bd; }
+.ux-tool:not(:disabled):active { background: #e3e3db; }
+.ux-tool:disabled { opacity: 0.45; filter: grayscale(1); }
+
 /* XP-Scrollbars (Chromium/Edge) */
 .xp-scroll::-webkit-scrollbar { width: 17px; height: 17px; }
 .xp-scroll::-webkit-scrollbar-track { background: #fefefe linear-gradient(90deg, #f3f1ec, #fefefe); }

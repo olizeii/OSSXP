@@ -16,7 +16,12 @@ import { config } from './config.js';
 import { initChat } from './chat/socket.js';
 import { attachUser } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
+import { economyRouter, profileRouter } from './routes/economy.js';
 import { emotesRouter } from './routes/emotes.js';
+import { mollyRouter } from './routes/molly.js';
+import { newsRouter } from './routes/news.js';
+import { redRouter } from './routes/red.js';
+import { sudokuRouter } from './routes/sudoku.js';
 import { untisRouter } from './routes/untis.js';
 
 const app = express();
@@ -35,6 +40,12 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, untisMode: config.unt
 app.use('/api/auth', authRouter);
 app.use('/api/untis', untisRouter);
 app.use('/api/emotes', emotesRouter);
+app.use('/api/economy', economyRouter);
+app.use('/api/profiles', profileRouter);
+app.use('/api/sudoku', sudokuRouter);
+app.use('/api/red', redRouter);
+app.use('/api/molly', mollyRouter);
+app.use('/api/news', newsRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Unbekannter API-Endpunkt.' }));
 
 // ─── Frontend (nur nach `npm run build`) ───────────────────────────────────

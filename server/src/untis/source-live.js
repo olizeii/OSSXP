@@ -176,7 +176,7 @@ export class LiveUntisSource {
     if (!this.client.person) await this.client.call('getLatestImportTime'); // erzwingt Login
     const { id, type, klasseId } = this.client.person ?? {};
     if (type === 2 && id) return { type: 'teacher', id };
-    if (type === 5 && id) return { type: 'student', id };
+    if (type === 5 && id) return { type: 'student', id, klasseId };
     if (klasseId) return { type: 'class', id: klasseId };
     throw new UntisError('forbidden', 'Für dieses Untis-Konto ist kein eigener Stundenplan verfügbar.');
   }
@@ -264,6 +264,32 @@ export class LiveUntisSource {
       departmentId: 0,
     });
     return (raw ?? []).map(mapSubstitution);
+  }
+
+  /**
+   * Prüfungen einer Klasse über die Web-API (GET /WebUntis/api/exams), wie sie auch die
+   * offizielle WebUntis-Oberfläche benutzt. Antwortformat: { data: { exams: [...] } }.
+   */
+  async getExams(klasseId, from, to) {
+    const res = await this.client.getJson('api/exams', {
+      startDate: String(isoToUntisDate(from)),
+      endDate: String(isoToUntisDate(to)),
+      klasseId: String(klasseId),
+      withGrades: 'true',
+    });
+    const exams = res?.data?.exams ?? res?.exams ?? [];
+    return exams.map((e) => ({
+      id: String(e.id),
+      date: untisDateToIso(e.examDate),
+      start: formatMinutes(untisTimeToMinutes(e.startTime)),
+      end: formatMinutes(untisTimeToMinutes(e.endTime)),
+      subject: e.subject ?? '',
+      name: e.name || e.examType || 'Prüfung',
+      type: e.examType || undefined,
+      text: e.text || undefined,
+      teachers: e.teachers ?? [],
+      rooms: e.rooms ?? [],
+    }));
   }
 
   logout = () => this.client.logout();

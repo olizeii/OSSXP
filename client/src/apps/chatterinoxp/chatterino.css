@@ -127,7 +127,9 @@
 .ct-msg.highlight { background: #4c1e2a; }
 
 .ct-time { color: var(--ct-muted); font-size: 12px; }
-.ct-name { font-weight: 700; }
+.ct-name { font-weight: 700; vertical-align: baseline; }
+.ct-name .usr-name-badges { margin-right: 2px; vertical-align: -2px; }
+.ct-mention { cursor: default; }
 .ct-mention { font-weight: 700; color: #fff; }
 .ct-msg a { color: #6aa9ff; }
 

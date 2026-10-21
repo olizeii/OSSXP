@@ -1,0 +1,115 @@
+/* Clippy – schwebt über dem Desktop, unter den Dialogen */
+
+.clippy {
+  position: absolute;
+  z-index: 8500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.clippy > * { pointer-events: auto; }
+
+.clippy-body {
+  cursor: grab;
+  touch-action: none;
+  filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.35));
+  animation: clippy-hop 0.5s ease-out, clippy-idle 6s ease-in-out 1s infinite;
+}
+
+@keyframes clippy-hop {
+  30% { transform: translateY(-14px) rotate(-6deg); }
+  60% { transform: translateY(0) rotate(4deg); }
+}
+
+@keyframes clippy-idle {
+  0%, 90%, 100% { transform: rotate(0); }
+  94% { transform: rotate(-5deg); }
+  97% { transform: rotate(4deg); }
+}
+
+/* Blinzeln & Umherschauen */
+.clippy-lid { animation: clippy-blink 5s infinite; }
+.clippy-pupil { animation: clippy-look 9s ease-in-out infinite; }
+
+@keyframes clippy-blink {
+  0%, 94%, 100% { height: 0; }
+  96% { height: 20px; }
+}
+
+@keyframes clippy-look {
+  0%, 40%, 100% { transform: translate(0, 0); }
+  50%, 60% { transform: translate(-4px, -1px); }
+  70%, 80% { transform: translate(2px, -3px); }
+}
+
+/* Sprechblase im Stil der XP-Tooltips */
+.clippy-bubble {
+  position: relative;
+  width: 240px;
+  margin-bottom: 10px;
+  padding: 10px 12px 8px;
+  background: #ffffe1;
+  border: 1px solid #000;
+  border-radius: 8px;
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+  font: 11px/1.45 var(--xp-font);
+  animation: clippy-pop 0.18s ease-out;
+}
+
+.clippy-bubble::after {
+  content: '';
+  position: absolute;
+  right: 26px;
+  bottom: -11px;
+  width: 18px;
+  height: 11px;
+  background: #ffffe1;
+  border-right: 1px solid #000;
+  border-bottom: 1px solid #000;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  transform: skewX(-20deg);
+}
+
+@keyframes clippy-pop { from { opacity: 0; transform: translateY(6px); } }
+
+.clippy-bubble p { margin: 2px 0 8px; }
+
+.clippy-close {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  padding: 0 3px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.clippy-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.clippy-actions .xp-button { min-width: 0; padding: 0 8px; }
+
+.clippy-menu {
+  position: absolute;
+  right: 60px;
+  bottom: 40px;
+  min-width: 170px;
+  padding: 2px;
+  background: #fff;
+  border: 1px solid #aca899;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.clippy-menu button {
+  display: block;
+  width: 100%;
+  padding: 3px 18px;
+  background: none;
+  border: 0;
+  font: 11px var(--xp-font);
+  text-align: left;
+}
+
+.clippy-menu button:hover { background: var(--xp-select); color: #fff; }
+.clippy-menu hr { margin: 3px 1px; border: 0; border-top: 1px solid #aca899; }

@@ -1,0 +1,40 @@
+/* Gemeinsame User-Bausteine (Namen, Abzeichen, Level, Avatare) */
+
+.usr-name { display: inline-flex; align-items: center; gap: 3px; }
+.usr-name-badges { display: inline-flex; gap: 1px; }
+
+.usr-link {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.usr-link:hover { text-decoration: underline; }
+.usr-anon { color: #888; font-style: italic; }
+
+.usr-badge { flex: none; vertical-align: middle; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)); }
+.usr-coin { flex: none; vertical-align: -2px; }
+
+.usr-level {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border: 2px solid;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #e8e8e8);
+  color: #222;
+  font-family: 'Trebuchet MS', Tahoma, sans-serif;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.usr-avatar {
+  flex: none;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #fff;
+}

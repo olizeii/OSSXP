@@ -291,6 +291,34 @@ export class MockUntisSource {
     return result;
   }
 
+  /** Demo-Prüfungen: an festen Wochentagen alle zwei Wochen eine Schularbeit bzw. ein Test. */
+  async getExams(klasseId, from, to) {
+    const cls = classes.find((c) => c.id === klasseId);
+    const exams = [];
+    for (const date of dateRange(from, to)) {
+      const dayNum = Math.round(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
+      const lesson = lessonsForDate(date).find(
+        (l) => l.classes[0].id === klasseId && l.status !== 'cancelled' && ['AM', 'D', 'E', 'SEW', 'NWT', 'INSY'].includes(l.subjects[0].name),
+      );
+      if (!lesson || (dayNum + klasseId) % 6 !== 0) continue;
+      const big = ['AM', 'D', 'E'].includes(lesson.subjects[0].name);
+      exams.push({
+        id: `demo-${date}-${lesson.id}`,
+        date,
+        start: lesson.start,
+        end: lesson.end,
+        subject: lesson.subjects[0].name,
+        subjectLong: lesson.subjects[0].longName,
+        name: big ? `${lesson.subjects[0].longName} Schularbeit` : `${lesson.subjects[0].name}-Test`,
+        type: big ? 'Schularbeit' : 'Test',
+        text: big ? 'Stoff: alles seit der letzten Schularbeit' : `Klasse ${cls?.name}`,
+        teachers: lesson.teachers.map((t) => t.name),
+        rooms: lesson.rooms.map((r) => r.name),
+      });
+    }
+    return exams;
+  }
+
   async getSubstitutions(from, to) {
     await delay(50);
     return deriveSubstitutions([...dateRange(from, to)].flatMap(lessonsForDate));

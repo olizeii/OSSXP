@@ -10,6 +10,6 @@ export default defineApp({
   icon,
   component: lazy(() => import('./SudoXP')),
   // Feste Größe wie bei den XP-Spielen
-  window: { width: 372, height: 534, resizable: false },
+  window: { width: 372, height: 560, resizable: false },
   placement: { desktop: true, startMenu: 'left' },
 });

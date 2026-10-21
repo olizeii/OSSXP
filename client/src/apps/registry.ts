@@ -17,9 +17,14 @@ import type { AppDefinition } from '../core/types';
 import about from './about';
 import account from './account';
 import chatterinoxp from './chatterinoxp';
+import mollyxp from './mollyxp';
+import newsxp from './newsxp';
+import profile from './profile';
+import redxp from './redxp';
+import shop from './shop';
 import sudoxp from './sudoxp';
 import untisxp from './untisxp';
 
-export const apps: AppDefinition[] = [untisxp, chatterinoxp, sudoxp, account, about];
+export const apps: AppDefinition[] = [untisxp, chatterinoxp, redxp, mollyxp, newsxp, sudoxp, account, shop, about, profile];
 
 export const appsById: Record<string, AppDefinition> = Object.fromEntries(apps.map((a) => [a.id, a]));

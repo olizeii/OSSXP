@@ -15,6 +15,8 @@ export interface User {
   id: number;
   username: string;
   color: string;
+  /** Admin laut ADMIN_USERNAMES (z. B. für NewsXP) */
+  isAdmin: boolean;
   /** null = Standardbild, sonst "preset:<id>" oder data:-URL – siehe core/avatars.ts */
   avatar: string | null;
   createdAt: number;
