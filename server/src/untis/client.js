@@ -115,6 +115,34 @@ export class UntisClient {
     }
   }
 
+  /**
+   * GET auf die interne Web-API von WebUntis (z. B. die Wochenansicht), mit Session-Cookie.
+   * Wird gebraucht, weil Schüler-Accounts per JSON-RPC oft keine Lehrkräfte sehen.
+   */
+  async getJson(path, query, retried = false) {
+    await this.#ensureSession();
+    let res;
+    try {
+      res = await fetch(`${this.baseUrl}/${path}?${new URLSearchParams(query)}`, {
+        headers: { Accept: 'application/json', Cookie: this.#cookieHeader() },
+        signal: AbortSignal.timeout(config.untis.timeoutMs),
+      });
+    } catch (err) {
+      throw toUntisError(err);
+    }
+    if ((res.status === 401 || res.status === 403) && !retried) {
+      this.sessionId = null;
+      return this.getJson(path, query, true);
+    }
+    if (!res.ok) {
+      throw new UntisError(res.status === 403 ? 'forbidden' : 'network', `WebUntis-Webabfrage fehlgeschlagen (HTTP ${res.status}).`);
+    }
+    const data = await res.json().catch(() => null);
+    if (data === null) throw new UntisError('network', 'WebUntis hat keine gültige JSON-Antwort geliefert.');
+    this.lastUsed = Date.now();
+    return data;
+  }
+
   async logout() {
     if (!this.sessionId) return;
     try {

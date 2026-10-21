@@ -112,7 +112,13 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
 
 **Zugriffsregeln**
 
-- **UntisXP**: nur eingeloggt **und** mit verknüpftem Untis-Account. Sonst erscheint eine XP-Meldung mit „Anmelden“ bzw. „Jetzt verknüpfen“; nach dem Login startet die App automatisch.
+- **UntisXP**: das komplette [UntisDashboard](https://github.com/olizeii/UntisDashboard) im XP-Explorer-Look –
+  Dashboard (Vertretungen, Entfälle, Raumauslastung pro Stunde, freie Räume, anstehende Änderungen),
+  **Lehrer-/Klassen-/Raumsuche** mit Live-Status („Wo ist … gerade?“, Restzeit-Countdown, Doppelstunden, nächste Stunde, Tagesplan),
+  freie Räume, Vertretungsplan (Tag/Woche, Filter, Suche) und der eigene Wochenstundenplan.
+  Datum/Uhrzeit lassen sich frei wählen, Strg+K öffnet die Suche, Zurück/Vor funktioniert wie im Explorer.
+  Schüler-Accounts ohne Leserechte bekommen automatische Fallbacks (Lehrkräfte aus der Wochenansicht, Vertretungen aus den Stundenplänen).
+  Nur eingeloggt **und** mit verknüpftem Untis-Account. Sonst erscheint eine XP-Meldung mit „Anmelden“ bzw. „Jetzt verknüpfen“; nach dem Login startet die App automatisch.
 - **chatterinoXP**: für alle offen. Gäste sind im **Zuschauer-Modus** (nur lesen) – das erzwingt der Server, nicht nur die UI. Beim Start ist immer der allgemeine Channel aktiv.
 - **SudoXP**: für alle spielbar. Drei Schwierigkeitsgrade, jedes Rätsel ist zufällig und eindeutig lösbar.
   Tasten: 1–9 setzen · Entf löschen · Pfeiltasten · N = Notizen · H = Tipp · Strg+Z = Rückgängig · F2 = Neues Spiel.

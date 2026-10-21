@@ -1,6 +1,8 @@
-/* UntisXP – Explorer-Layout + Stundenplan-Raster */
+/* UntisXP – Explorer-Layout, Dashboard-Bausteine und Stundenplan im XP-Stil */
 
 .ux { display: flex; flex-direction: column; height: 100%; }
+
+/* ─── Symbolleiste ─────────────────────────────────────────────────────── */
 
 .ux-toolbar {
   display: flex;
@@ -24,9 +26,12 @@
   cursor: default;
 }
 
-.ux-tool:hover { border-color: #cecec3; background: linear-gradient(to bottom, #fff, #f3f3ee); box-shadow: inset 0 -1px #d8d2bd; }
-.ux-tool:active { background: #e3e3db; }
+.ux-tool:not(:disabled):hover { border-color: #cecec3; background: linear-gradient(to bottom, #fff, #f3f3ee); box-shadow: inset 0 -1px #d8d2bd; }
+.ux-tool:not(:disabled):active { background: #e3e3db; }
+.ux-tool:disabled { opacity: 0.45; filter: grayscale(1); }
 .ux-tool-sep { width: 1px; height: 26px; margin: 0 3px; background: #c5c2b2; box-shadow: 1px 0 #fff; }
+
+/* ─── Adressleiste ─────────────────────────────────────────────────────── */
 
 .ux-address {
   display: flex;
@@ -40,33 +45,389 @@
 
 .ux-address-field {
   flex: 1;
-  height: 20px;
-  padding: 2px 6px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 6px;
+  overflow: hidden;
+  white-space: nowrap;
   background: #fff;
   border: 1px solid var(--xp-input-border);
 }
 
-.ux-address-school { color: #777; }
+.ux-global-search { flex: 0 0 240px; }
+
+/* ─── Hauptbereich ─────────────────────────────────────────────────────── */
 
 .ux-main { flex: 1; min-height: 0; display: flex; }
 .ux-main .cp-taskpane { width: 200px; }
+.ux-main .cp-task .ux-glyph { flex: none; }
 .ux-box { line-height: 1.5; }
-.ux-countdown { margin-top: 3px; color: #215dc6; font-weight: bold; }
+.ux-error-text { color: #c00; }
 
-.ux-details { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 0; }
-.ux-details dt { color: #555; }
-.ux-details dd { margin: 0; }
-.ux-status-cancelled { color: #c00; font-weight: bold; }
-.ux-status-irregular { color: #c65d00; font-weight: bold; }
+.ux-content { flex: 1; min-width: 0; overflow: auto; background: #fff; }
 
-.ux-grid-wrap { flex: 1; min-width: 0; overflow: auto; background: #fff; }
+.ux-page { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 16px; }
 
-.ux-grid {
-  display: grid;
-  grid-template-columns: 62px repeat(5, minmax(96px, 1fr));
-  min-height: 100%;
-  min-width: 560px;
+.ux-toolrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
+
+.ux-stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.ux-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 10px;
+  align-items: start;
+}
+
+@container (max-width: 640px) {
+  .ux-columns { grid-template-columns: 1fr; }
+}
+
+.ux-content { container-type: inline-size; }
+
+/* ─── Allgemeine Helfer ────────────────────────────────────────────────── */
+
+.ux-muted { color: #6f6f6f; }
+.ux-small { font-size: 10px; margin: 0 0 6px; }
+.ux-green { color: #1f8a1f; font-weight: bold; }
+.ux-nowrap { white-space: nowrap; }
+.ux-ellipsis { max-width: 240px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ux-push { margin-left: auto; }
+.ux-glyph { flex: none; vertical-align: -3px; }
+
+.ux-link {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--xp-link);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ux-link:hover { text-decoration: underline; }
+
+.ux-refs { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; }
+.ux-ref { display: inline-flex; align-items: baseline; gap: 4px; }
+
+/* Gruppenfeld */
+.ux-group {
+  min-width: 0;
+  border: 1px solid #d0d0bf;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.ux-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #e4e2d6;
+  background: linear-gradient(to right, #f3f6fd, #fff);
+  border-radius: 4px 4px 0 0;
+}
+
+.ux-group-head h3 { margin: 0; color: #0046d5; font: bold 12px var(--xp-font); }
+.ux-group-head .xp-input { width: 180px; }
+.ux-group-body { padding: 8px 10px; overflow-x: auto; }
+
+/* XP-Fortschrittsbalken (grüne Blöcke) */
+.ux-progress {
+  height: 14px;
+  padding: 1px;
+  background: #fff;
+  border: 1px solid #686868;
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+.ux-progress-fill {
+  height: 100%;
+  /* weiße Lücken zwischen grünen Blöcken wie beim XP-Ladebalken */
+  background-image:
+    repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 10px),
+    linear-gradient(to bottom, #aef5a6, #37c639 45%, #1f9c22);
+  border-radius: 1px;
+  transition: width 0.4s linear;
+}
+
+/* Abzeichen */
+.ux-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.ux-badge.red { color: #a40000; background: #fde4e1; border-color: #f0a99f; }
+.ux-badge.amber { color: #8a5300; background: #fff1cf; border-color: #f0c870; }
+.ux-badge.blue { color: #0c4a9e; background: #e2edfd; border-color: #9fbdf0; }
+.ux-badge.gray { color: #555; background: #f0efe8; border-color: #cfccbe; }
+.ux-badge.green { color: #126b12; background: #def6d8; border-color: #8fd486; }
+
+.ux-badges { display: inline-flex; flex-wrap: wrap; gap: 3px; }
+
+/* Lade-/Fehler-/Leer-Zustände */
+.ux-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 26px 16px;
+  color: #555;
+  text-align: center;
+}
+
+.ux-state.error { flex-direction: row; align-items: flex-start; text-align: left; }
+.ux-state.error p { margin: 4px 0 8px; }
+
+.ux-spinner {
+  width: 120px;
+  height: 12px;
+  border: 1px solid #686868;
+  border-radius: 3px;
+  background: #fff linear-gradient(90deg, transparent 0 30%, #37c639 30% 40%, transparent 40% 45%, #37c639 45% 55%, transparent 55% 60%, #37c639 60% 70%, transparent 70%) no-repeat;
+  background-size: 200% 100%;
+  animation: ux-load 1.4s linear infinite;
+}
+
+@keyframes ux-load {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+/* Tabellen im Stil der XP-Listenansicht */
+.ux-table { width: 100%; border-collapse: collapse; }
+
+.ux-table th {
+  padding: 3px 6px;
+  font-weight: normal;
+  text-align: left;
+  white-space: nowrap;
+  background: linear-gradient(to bottom, #fff, #ebeadb);
+  border-bottom: 2px solid #d6d2c2;
+  border-right: 1px solid #e4e1d4;
+}
+
+.ux-table td { padding: 4px 6px; border-bottom: 1px solid #efeee7; vertical-align: middle; }
+.ux-table tbody tr:hover { background: #eef3fc; }
+.ux-table tr.past { opacity: 0.5; }
+.ux-table tr.now td { background: #fff4d9; }
+.ux-table tr.now td:first-child { box-shadow: inset 3px 0 #f0a020; }
+.ux-table tr.cancelled td { color: #a40000; }
+.ux-table tr.cancelled .ux-subject { text-decoration: line-through; }
+.ux-free-row td { background: #fafaf6; }
+
+/* ─── Datum/Uhrzeit-Leiste ─────────────────────────────────────────────── */
+
+.ux-moment { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ux-moment .xp-input { height: 23px; }
+.ux-moment .xp-button { min-width: 0; padding: 0 8px; }
+.ux-icon-btn { width: 24px; padding: 0 !important; font-size: 9px; }
+.ux-moment-label { margin-left: 4px; color: #444; }
+.xp-button.ux-live-on { background: linear-gradient(180deg, #f2fff0, #c9efc2); color: #126b12; }
+.xp-button.ux-live-on:disabled { color: #126b12; border-color: #3c8a3c; }
+
+.ux-segmented { display: inline-flex; border: 1px solid #003c74; border-radius: 3px; overflow: hidden; }
+.ux-segmented button { padding: 3px 14px; border: 0; background: linear-gradient(180deg, #fff, #ecebe6 86%, #d6d0c5); font: 11px var(--xp-font); }
+.ux-segmented button + button { border-left: 1px solid #003c74; }
+.ux-segmented button.active { background: #316ac5; color: #fff; }
+
+.ux-filters, .ux-filter-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ux-filter-chips .xp-button { min-width: 0; padding: 0 9px; }
+.ux-search { width: 220px; }
+
+/* ─── Suche ────────────────────────────────────────────────────────────── */
+
+.ux-picker { position: relative; display: flex; align-items: center; gap: 4px; min-width: 220px; flex: 1; max-width: 360px; }
+.ux-picker .xp-input { flex: 1; height: 23px; }
+.ux-global-search .ux-picker { max-width: none; }
+
+.ux-picker-list {
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  right: 0;
+  z-index: 20;
+  max-height: 300px;
+  margin: 1px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #7f9db9;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.ux-picker-list li { display: flex; align-items: center; gap: 6px; padding: 3px 6px; cursor: default; white-space: nowrap; }
+.ux-picker-list li b { min-width: 46px; }
+.ux-picker-list li .ux-muted { overflow: hidden; text-overflow: ellipsis; }
+.ux-picker-list li.active { background: var(--xp-select); color: #fff; }
+.ux-picker-list li.active .ux-muted, .ux-picker-list li.active .ux-picker-type { color: #e0e8ff; }
+.ux-picker-type { margin-left: auto; color: #888; font-size: 10px; }
+
+/* ─── Dashboard ────────────────────────────────────────────────────────── */
+
+.ux-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.ux-hero h2 { margin: 0 0 2px; color: #003399; font: 20px var(--xp-title-font); }
+
+.ux-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+.ux-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  text-align: left;
+  font: 11px var(--xp-font);
+  background: linear-gradient(to bottom, #fff, #f4f3ee);
+  border: 1px solid #d0d0bf;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ux-kpi:hover { border-color: #7f9db9; background: linear-gradient(to bottom, #fff, #e9f0fb); }
+.ux-kpi-label { color: #555; }
+.ux-kpi-value { color: #003399; font: bold 24px var(--xp-title-font); }
+.ux-kpi-value small { color: #888; font-size: 12px; font-weight: normal; }
+.ux-kpi .ux-small { margin: 0; }
+
+.ux-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.ux-chip {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 8px;
+  background: #f5f9ff;
+  border: 1px solid #b9cdef;
+  border-radius: 3px;
+  font: 11px var(--xp-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ux-chip span { color: #666; font-size: 10px; }
+.ux-chip:hover { background: #dbe7fb; border-color: #316ac5; }
+
+/* Säulendiagramm */
+.ux-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  padding: 0 4px 2px;
+  border-bottom: 1px solid #999;
+  background: repeating-linear-gradient(to top, #fff 0 35px, #eef0f5 35px 36px);
+}
+
+.ux-chart-col { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; position: relative; }
+
+.ux-chart-bar {
+  width: 70%;
+  min-height: 1px;
+  background: linear-gradient(to right, #2a5cc8, #6fa3f3 45%, #2a5cc8);
+  border: 1px solid #1c3f8f;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.4s;
+}
+
+.ux-chart-col.current .ux-chart-bar { background: linear-gradient(to right, #d9730d, #ffb55a 45%, #d9730d); border-color: #a5520a; }
+.ux-chart-num { font-size: 10px; color: #444; }
+.ux-chart-label { position: absolute; bottom: -16px; font-size: 10px; color: #555; }
+.ux-chart > p { margin-top: 20px; }
+
+/* ─── Kacheln (Explorer-Ansicht „Kacheln“) ─────────────────────────────── */
+
+.ux-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font: 11px var(--xp-font);
+  text-align: left;
+  cursor: default;
+}
+
+.ux-tile > span { display: flex; flex-direction: column; min-width: 0; }
+.ux-tile > span > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ux-tile:hover { background: #eef3fc; border-color: #c3d4f2; }
+.ux-tile:focus-visible { background: var(--xp-select); color: #fff; outline: 1px dotted #fff; }
+.ux-tile:focus-visible .ux-muted { color: #dfe8ff; }
+
+/* ─── Live-Status ──────────────────────────────────────────────────────── */
+
+.ux-live .ux-group-body { display: flex; flex-direction: column; gap: 10px; }
+.ux-live-name { font: bold 16px var(--xp-title-font); color: #003399; }
+.ux-live-badges { display: flex; align-items: center; gap: 8px; }
+
+.ux-live-dot { display: inline-flex; align-items: center; gap: 4px; color: #1f8a1f; font-weight: bold; font-size: 10px; }
+.ux-live-dot span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2fbf3a;
+  box-shadow: 0 0 0 0 rgba(47, 191, 58, 0.6);
+  animation: ux-pulse 1.6s infinite;
+}
+
+@keyframes ux-pulse {
+  70% { box-shadow: 0 0 0 6px rgba(47, 191, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 191, 58, 0); }
+}
+
+.ux-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ux-fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ux-fact-label { color: #6f6f6f; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+.ux-fact-primary { font: bold 26px var(--xp-title-font); color: #000; }
+.ux-fact-value { font: bold 16px var(--xp-title-font); }
+
+.ux-countdown-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px; }
+.ux-countdown { font: bold 22px 'Consolas', 'Courier New', monospace; color: #003399; }
+
+.ux-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 8px;
+  background: #ffffe1;
+  border: 1px solid #c9c9a0;
+  border-radius: 3px;
+}
+
+/* ─── Mein Stundenplan (Wochenraster) ──────────────────────────────────── */
+
+.ux-week-wrap { overflow: auto; border: 1px solid #d0d0bf; }
+
+.ux-grid { display: grid; grid-template-columns: 62px repeat(5, minmax(96px, 1fr)); min-width: 560px; }
 
 .ux-corner,
 .ux-dayhead {
@@ -101,17 +462,9 @@
 }
 
 .ux-period b { color: #222; font-size: 12px; }
-
 .ux-cell { border-bottom: 1px solid #ecebe3; border-right: 1px solid #ecebe3; }
 .ux-cell.today { background: #fffaf0; }
-
-.ux-slot {
-  z-index: 1;
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  min-width: 0;
-}
+.ux-slot { z-index: 1; display: flex; gap: 2px; padding: 2px; min-width: 0; }
 
 .ux-lesson {
   flex: 1;
@@ -134,14 +487,11 @@
 .ux-lesson:hover { filter: brightness(1.04); border-color: #316ac5; }
 .ux-lesson.selected { outline: 2px solid #316ac5; outline-offset: -1px; }
 .ux-lesson.now { box-shadow: 0 0 0 2px #2fa82f inset; }
-
-.ux-lesson.cancelled {
-  background: repeating-linear-gradient(135deg, #fbe3e3 0 6px, #f6cfcf 6px 12px);
-  color: #a00;
-}
-
+.ux-lesson.cancelled { background: repeating-linear-gradient(135deg, #fbe3e3 0 6px, #f6cfcf 6px 12px); color: #a00; }
 .ux-lesson.cancelled b,
 .ux-lesson.cancelled span { text-decoration: line-through; color: #a00; }
 .ux-lesson.irregular { border: 2px solid #f08a00; }
 
-.ux-error { padding: 24px; line-height: 1.5; }
+.ux-details { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; }
+.ux-details dt { color: #555; }
+.ux-details dd { margin: 0; }

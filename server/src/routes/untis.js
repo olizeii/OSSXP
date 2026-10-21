@@ -1,5 +1,16 @@
 /**
- * /api/untis – Verknüpfung eines OSSXP-Accounts mit WebUntis + Datenendpunkte für UntisXP.
+ * /api/untis – Verknüpfung eines OSSXP-Accounts mit WebUntis + alle Datenendpunkte für UntisXP
+ * (entspricht den /api/untis/*-Routen von UntisDashboard).
+ *
+ *   GET    /status                      Verknüpfung, Modus, Zeitzone, aktuelle Schulzeit
+ *   POST   /link, DELETE /link          verknüpfen / Verknüpfung aufheben
+ *   GET    /timetable?from&to           eigener Stundenplan (Wochenansicht)
+ *   GET    /timegrid                    Zeitraster
+ *   GET    /master                      Lehrkräfte, Klassen, Räume, Fächer
+ *   GET    /element?type&id&date&time   Live-Status + Tagesplan einer Lehrkraft/Klasse/eines Raums
+ *   GET    /rooms/free?date&time        freie und belegte Räume
+ *   GET    /substitutions?date&range    Vertretungsplan (range = day | week)
+ *   GET    /stats?date&time             Dashboard-Kennzahlen
  */
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -7,12 +18,13 @@ import { untisLinks } from '../db.js';
 import { publicUser, requireAuth, requireUntis } from '../middleware/auth.js';
 import { encrypt } from '../untis/crypto.js';
 import { UntisError } from '../untis/errors.js';
-import { parseServerInput, untisService } from '../untis/service.js';
+import { parseServerInput, resolveMoment, untisFor, untisService } from '../untis/service.js';
+import { addDays, isIsoDate, startOfWeek, zonedNow } from '../untis/time.js';
 
 export const untisRouter = Router();
 untisRouter.use(requireAuth);
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ELEMENT_TYPES = new Set(['teacher', 'class', 'room']);
 
 const linkLimiter = rateLimit({
   windowMs: 15 * 60_000,
@@ -22,17 +34,28 @@ const linkLimiter = rateLimit({
   message: { error: 'Zu viele Verknüpfungsversuche. Bitte später erneut versuchen.' },
 });
 
-/** Untis-Fehler mit passendem Status weiterreichen, alles andere an den globalen Handler. */
-function handleUntisError(res, err, next) {
-  if (err instanceof UntisError) return res.status(err.httpStatus).json({ error: err.message, kind: err.kind });
-  next(err);
-}
+/** Führt eine Untis-Abfrage aus; Untis-Fehler gehen mit passendem Status an den Browser. */
+const handle = (fn) => async (req, res, next) => {
+  try {
+    res.json(await fn(req, untisFor(req.untisLink)));
+  } catch (err) {
+    if (err instanceof UntisError) return res.status(err.httpStatus).json({ error: err.message, kind: err.kind });
+    next(err);
+  }
+};
+
+const badRequest = (message) => new UntisError('config', message);
+
+// ─── Verknüpfung ───────────────────────────────────────────────────────────
 
 untisRouter.get('/status', (req, res) => {
   const link = untisLinks.findByUser(req.user.id);
+  const now = zonedNow(untisService.timezone);
   res.json({
     linked: Boolean(link),
     mode: untisService.mode,
+    timezone: untisService.timezone,
+    today: now.date,
     link: link ? { server: link.server, school: link.school, username: link.username } : null,
   });
 });
@@ -58,7 +81,8 @@ untisRouter.post('/link', linkLimiter, async (req, res, next) => {
   try {
     await untisService.verify({ server, school, username, password });
   } catch (err) {
-    return handleUntisError(res, err, next);
+    if (err instanceof UntisError) return res.status(err.httpStatus).json({ error: err.message, kind: err.kind });
+    return next(err);
   }
 
   untisLinks.upsert({ userId: req.user.id, server, school, username, secretEnc: encrypt(password) });
@@ -74,26 +98,46 @@ untisRouter.delete('/link', (req, res) => {
 
 // ─── Daten (nur mit Verknüpfung) ───────────────────────────────────────────
 
-untisRouter.get('/timegrid', requireUntis, async (req, res, next) => {
-  try {
-    res.json({ timegrid: await untisService.getTimegrid(req.untisLink) });
-  } catch (err) {
-    handleUntisError(res, err, next);
-  }
-});
+untisRouter.use(requireUntis);
 
-untisRouter.get('/timetable', requireUntis, async (req, res, next) => {
-  const { from, to } = req.query;
-  if (!ISO_DATE.test(from) || !ISO_DATE.test(to)) {
-    return res.status(400).json({ error: 'Parameter from/to im Format YYYY-MM-DD erforderlich.' });
-  }
-  if ((new Date(to) - new Date(from)) / 86_400_000 > 31) {
-    return res.status(400).json({ error: 'Maximal 31 Tage pro Anfrage.' });
-  }
-  try {
-    const lessons = await untisService.getTimetable(req.untisLink, from, to);
-    res.json({ from, to, lessons, mode: untisService.mode });
-  } catch (err) {
-    handleUntisError(res, err, next);
-  }
-});
+untisRouter.get(
+  '/timetable',
+  handle(async (req, untis) => {
+    const { from, to } = req.query;
+    if (!isIsoDate(from) || !isIsoDate(to)) throw badRequest('Parameter from/to im Format YYYY-MM-DD erforderlich.');
+    if ((new Date(to) - new Date(from)) / 86_400_000 > 31) throw badRequest('Maximal 31 Tage pro Anfrage.');
+    return { from, to, lessons: await untis.ownTimetable(from, to), mode: untisService.mode };
+  }),
+);
+
+untisRouter.get('/timegrid', handle(async (_req, untis) => ({ timegrid: await untis.timegrid() })));
+
+untisRouter.get(
+  '/master',
+  handle(async (_req, untis) => ({ ...(await untis.masterData()), mode: untisService.mode, timezone: untisService.timezone })),
+);
+
+untisRouter.get(
+  '/element',
+  handle(async (req, untis) => {
+    const type = String(req.query.type);
+    const id = Number(req.query.id);
+    if (!ELEMENT_TYPES.has(type) || !Number.isInteger(id)) throw badRequest('Parameter type (teacher|class|room) und id erforderlich.');
+    return untis.elementStatus(type, id, resolveMoment(req.query.date, req.query.time));
+  }),
+);
+
+untisRouter.get('/rooms/free', handle(async (req, untis) => untis.freeRooms(resolveMoment(req.query.date, req.query.time))));
+
+untisRouter.get(
+  '/substitutions',
+  handle(async (req, untis) => {
+    const { date } = resolveMoment(req.query.date);
+    const week = req.query.range === 'week';
+    const from = week ? startOfWeek(date) : date;
+    const to = week ? addDays(from, 4) : date;
+    return untis.substitutions(from, to);
+  }),
+);
+
+untisRouter.get('/stats', handle(async (req, untis) => untis.dashboard(resolveMoment(req.query.date, req.query.time))));

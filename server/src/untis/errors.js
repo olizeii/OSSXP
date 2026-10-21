@@ -19,7 +19,7 @@ const MESSAGES = {
 };
 
 /**
- * @typedef {'auth' | 'config' | 'network' | 'forbidden' | 'untis'} UntisErrorKind
+ * @typedef {'auth' | 'config' | 'network' | 'forbidden' | 'not-found' | 'untis'} UntisErrorKind
  */
 export class UntisError extends Error {
   /**
@@ -36,7 +36,7 @@ export class UntisError extends Error {
 
   /** HTTP-Status, mit dem der Fehler an den Browser weitergegeben wird. */
   get httpStatus() {
-    return { auth: 401, forbidden: 403, config: 400, network: 502, untis: 502 }[this.kind] ?? 500;
+    return { auth: 401, forbidden: 403, 'not-found': 404, config: 400, network: 502, untis: 502 }[this.kind] ?? 500;
   }
 
   static fromRpc(error) {
@@ -52,6 +52,10 @@ export class UntisError extends Error {
     return new UntisError(kind, MESSAGES[code] ?? `WebUntis-Fehler: ${error?.message ?? code}`, code);
   }
 }
+
+/** Fehlende Leserechte für eine Abfrage (z. B. Schüler-Account fragt Lehrer-Stundenplan ab). */
+export const isPermissionError = (err) =>
+  err instanceof UntisError && err.kind === 'forbidden' && err.code !== UNTIS_ERROR_CODES.NO_ALLOWED_DATE;
 
 /** Normalisiert beliebige Fehler (Timeout, DNS, …) zu einem UntisError. */
 export function toUntisError(err) {

@@ -3,16 +3,17 @@ import { defineApp } from '../../core/types';
 import icon from '../../assets/icons/untisxp.svg';
 
 /**
- * UntisXP – Stundenplan-Dashboard (basiert auf github.com/olizeii/UntisDashboard).
+ * UntisXP – das UntisDashboard (github.com/olizeii/UntisDashboard) im XP-Explorer-Look:
+ * Dashboard, Lehrer-/Klassen-/Raumsuche mit Live-Status, freie Räume, Vertretungsplan, eigener Stundenplan.
  * Nur für eingeloggte User MIT Untis-Verknüpfung – das prüft der Launcher anhand von `requires`.
  */
 export default defineApp({
   id: 'untisxp',
   title: 'UntisXP',
-  description: 'Stundenplan & Vertretungen',
+  description: 'Wo ist …? · Vertretungen',
   icon,
   component: lazy(() => import('./UntisXP')),
-  window: { width: 860, height: 560, minWidth: 600, minHeight: 380 },
+  window: { width: 1000, height: 660, minWidth: 640, minHeight: 420 },
   requires: { auth: true, untis: true },
   placement: { desktop: true, startMenu: 'pinned' },
 });

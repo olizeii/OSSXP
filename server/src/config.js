@@ -40,6 +40,8 @@ export const config = {
   untis: {
     secret: secret('UNTIS_SECRET'),
     mock: process.env.UNTIS_MOCK === 'true',
+    /** Zeitzone der Schule – bestimmt „jetzt“ für Live-Status, freie Räume usw. */
+    timezone: process.env.UNTIS_TIMEZONE || 'Europe/Vienna',
     clientName: 'OSSXP',
     timeoutMs: 10_000,
     /** WebUntis beendet Sessions nach ~10 min Inaktivität – wir loggen nach 8 min neu ein. */
