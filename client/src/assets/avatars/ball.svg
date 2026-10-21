@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Benutzerbild: Fußball auf Rasen -->
+  <defs>
+    <linearGradient id="bl-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fc4ff"/><stop offset=".55" stop-color="#cfe9ff"/><stop offset=".56" stop-color="#6cc23a"/><stop offset="1" stop-color="#2f7d12"/>
+    </linearGradient>
+    <radialGradient id="bl-ball" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#fff"/><stop offset="0.7" stop-color="#e9e9e9"/><stop offset="1" stop-color="#9a9a9a"/>
+    </radialGradient>
+  </defs>
+  <rect width="48" height="48" fill="url(#bl-bg)"/>
+  <ellipse cx="24" cy="42" rx="12" ry="2.5" fill="#000" opacity=".25"/>
+  <circle cx="24" cy="26" r="15" fill="url(#bl-ball)" stroke="#555"/>
+  <path d="M24 19l6 4.3-2.3 7h-7.4l-2.3-7Z" fill="#222"/>
+  <path d="M24 19v-7.5M30 23.3l6.5-2.5M27.7 30.3l3.8 6.2M20.3 30.3l-3.8 6.2M18 23.3l-6.5-2.5" stroke="#222" stroke-width="1.3"/>
+  <path d="M20 11.6l4-.6 4 .6-1 3h-6Z M36.5 20.8l1.9 3.4-.4 4-2.6-1.2-.6-4.6Z M31.5 36.5l-3.4 2.2-3.8.3 1.2-3.2Z M16.5 36.5l3.4 2.2 3.8.3-1.2-3.2Z M11.5 20.8l-1.9 3.4.4 4 2.6-1.2.6-4.6Z" fill="#222"/>
+  <ellipse cx="19" cy="17" rx="5" ry="2.6" fill="#fff" opacity=".7"/>
+</svg>

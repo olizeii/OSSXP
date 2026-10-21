@@ -1,0 +1,147 @@
+/* UntisXP – Explorer-Layout + Stundenplan-Raster */
+
+.ux { display: flex; flex-direction: column; height: 100%; }
+
+.ux-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: linear-gradient(to bottom, #fbfbf8, #ece9d8);
+  border-bottom: 1px solid #d8d2bd;
+}
+
+.ux-tool {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 7px 0 3px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font: 11px var(--xp-font);
+  cursor: default;
+}
+
+.ux-tool:hover { border-color: #cecec3; background: linear-gradient(to bottom, #fff, #f3f3ee); box-shadow: inset 0 -1px #d8d2bd; }
+.ux-tool:active { background: #e3e3db; }
+.ux-tool-sep { width: 1px; height: 26px; margin: 0 3px; background: #c5c2b2; box-shadow: 1px 0 #fff; }
+
+.ux-address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-bottom: 1px solid #d8d2bd;
+}
+
+.ux-address-label { color: #6d6d6d; }
+
+.ux-address-field {
+  flex: 1;
+  height: 20px;
+  padding: 2px 6px;
+  background: #fff;
+  border: 1px solid var(--xp-input-border);
+}
+
+.ux-address-school { color: #777; }
+
+.ux-main { flex: 1; min-height: 0; display: flex; }
+.ux-main .cp-taskpane { width: 200px; }
+.ux-box { line-height: 1.5; }
+.ux-countdown { margin-top: 3px; color: #215dc6; font-weight: bold; }
+
+.ux-details { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 0; }
+.ux-details dt { color: #555; }
+.ux-details dd { margin: 0; }
+.ux-status-cancelled { color: #c00; font-weight: bold; }
+.ux-status-irregular { color: #c65d00; font-weight: bold; }
+
+.ux-grid-wrap { flex: 1; min-width: 0; overflow: auto; background: #fff; }
+
+.ux-grid {
+  display: grid;
+  grid-template-columns: 62px repeat(5, minmax(96px, 1fr));
+  min-height: 100%;
+  min-width: 560px;
+}
+
+.ux-corner,
+.ux-dayhead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(to bottom, #fff, #ebeadb);
+  border-bottom: 2px solid #d6d2c2;
+  border-right: 1px solid #e4e1d4;
+  font-weight: bold;
+}
+
+.ux-corner { grid-column: 1; }
+.ux-dayhead.today { background: linear-gradient(to bottom, #ffe8bd, #fbc66b); border-bottom-color: #e3a43c; }
+
+.ux-period {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #ecebe3;
+  border-right: 1px solid #d6d2c2;
+  background: #f7f6ef;
+  color: #555;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ux-period b { color: #222; font-size: 12px; }
+
+.ux-cell { border-bottom: 1px solid #ecebe3; border-right: 1px solid #ecebe3; }
+.ux-cell.today { background: #fffaf0; }
+
+.ux-slot {
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  min-width: 0;
+}
+
+.ux-lesson {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 3px;
+  font: 10px var(--xp-font);
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.7);
+}
+
+.ux-lesson b { font-size: 11px; }
+.ux-lesson span { color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ux-lesson:hover { filter: brightness(1.04); border-color: #316ac5; }
+.ux-lesson.selected { outline: 2px solid #316ac5; outline-offset: -1px; }
+.ux-lesson.now { box-shadow: 0 0 0 2px #2fa82f inset; }
+
+.ux-lesson.cancelled {
+  background: repeating-linear-gradient(135deg, #fbe3e3 0 6px, #f6cfcf 6px 12px);
+  color: #a00;
+}
+
+.ux-lesson.cancelled b,
+.ux-lesson.cancelled span { text-decoration: line-through; color: #a00; }
+.ux-lesson.irregular { border: 2px solid #f08a00; }
+
+.ux-error { padding: 24px; line-height: 1.5; }

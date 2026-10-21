@@ -1,0 +1,295 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   OSSXP – Windows XP „Luna“-Theme (Basis: Schrift, Fenster, Buttons, Formulare)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --xp-font: Tahoma, 'Segoe UI', Verdana, sans-serif;
+  --xp-title-font: 'Trebuchet MS', Tahoma, sans-serif;
+  --xp-face: #ece9d8;            /* Dialog-/Fensterhintergrund */
+  --xp-border: #0831d9;
+  --xp-select: #316ac5;          /* Auswahl-Blau */
+  --xp-input-border: #7f9db9;
+  --xp-link: #0033cc;
+  --taskbar-h: 30px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font: 11px/1.3 var(--xp-font);
+  color: #000;
+  background: #3a6ea5;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+img { -webkit-user-drag: none; }
+
+/* Textauswahl nur dort, wo sie sinnvoll ist */
+input, textarea, .selectable { user-select: text; }
+
+/* ─── Fenster ─────────────────────────────────────────────────────────────── */
+
+.xp-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: 0 3px 3px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(to right, #0a3ad6, #0b56ea 4px, #0b56ea calc(100% - 4px), #0a3ad6);
+  box-shadow:
+    inset 0 -1px #00138c,
+    inset 1px 0 #166aee,
+    inset -1px 0 #001ea0,
+    2px 4px 12px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
+}
+
+.xp-window.inactive {
+  background: linear-gradient(to right, #6582d9, #7b97e0 4px, #7b97e0 calc(100% - 4px), #6582d9);
+  box-shadow: inset 0 -1px #5070c8, 1px 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.xp-window.maximized {
+  border-radius: 0;
+  padding: 0;
+}
+
+.xp-window.minimized {
+  opacity: 0;
+  transform: translateY(45%) scale(0.35);
+  pointer-events: none;
+}
+
+/* Titelleiste */
+.title-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 29px;
+  margin: 0 -3px;
+  padding: 0 5px 0 6px;
+  border-radius: 7px 7px 0 0;
+  background: linear-gradient(
+    to bottom,
+    #0058ee 0%, #3593ff 4%, #288eff 6%, #127dff 8%, #036ffc 10%, #0262ee 14%,
+    #0057e5 20%, #0054e3 24%, #0055eb 56%, #005bf5 66%, #026afe 76%, #0062ef 86%,
+    #0052d6 92%, #0040ab 94%, #003092 100%
+  );
+  cursor: default;
+  touch-action: none;
+}
+
+.xp-window.maximized .title-bar {
+  margin: 0;
+  border-radius: 0;
+}
+
+.xp-window.inactive .title-bar {
+  background: linear-gradient(
+    to bottom,
+    #7697e7 0%, #7e9ee3 3%, #94afe8 6%, #97b4e9 8%, #82a5e4 14%, #7c9fe2 17%,
+    #7996de 25%, #7b99e1 56%, #82a9e9 81%, #80a5e7 89%, #7b96e1 94%, #7a93df 97%, #abbae3 100%
+  );
+}
+
+.title-bar-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.title-bar-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #fff;
+  font: bold 13px var(--xp-title-font);
+  letter-spacing: 0.2px;
+  text-shadow: 1px 1px #0f1089;
+}
+
+.xp-window.inactive .title-bar-text {
+  color: #d8e4f8;
+  text-shadow: none;
+}
+
+.title-bar-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.title-bar-controls button {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  background: radial-gradient(circle at 90% 90%, #0054e9 0%, #2263d5 55%, #4479e4 70%, #a3bbec 90%, #fff 100%);
+  box-shadow: inset 0 -1px 2px 1px #4646ff;
+  cursor: default;
+}
+
+.title-bar-controls button:hover { filter: brightness(1.18); }
+.title-bar-controls button:active { filter: brightness(0.85); }
+
+.title-bar-controls button.close {
+  background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #fff 100%);
+  box-shadow: inset 0 -1px 2px 1px #da4600;
+}
+
+.title-bar-controls button:disabled { opacity: 0.5; filter: none; }
+
+.xp-window.inactive .title-bar-controls button { opacity: 0.65; }
+
+.window-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--xp-face);
+  overflow: hidden;
+}
+
+/* Resize-Griffe (unsichtbar, an allen Kanten und Ecken) */
+.resize-handle { position: absolute; z-index: 2; touch-action: none; }
+.resize-handle.n  { top: -3px; left: 8px; right: 8px; height: 6px; cursor: n-resize; }
+.resize-handle.s  { bottom: -3px; left: 8px; right: 8px; height: 6px; cursor: s-resize; }
+.resize-handle.e  { right: -3px; top: 8px; bottom: 8px; width: 6px; cursor: e-resize; }
+.resize-handle.w  { left: -3px; top: 8px; bottom: 8px; width: 6px; cursor: w-resize; }
+.resize-handle.ne { right: -3px; top: -3px; width: 12px; height: 12px; cursor: ne-resize; }
+.resize-handle.nw { left: -3px; top: -3px; width: 12px; height: 12px; cursor: nw-resize; }
+.resize-handle.se { right: -3px; bottom: -3px; width: 14px; height: 14px; cursor: se-resize; }
+.resize-handle.sw { left: -3px; bottom: -3px; width: 12px; height: 12px; cursor: sw-resize; }
+
+/* Während Drag/Resize keine Textauswahl und keine Iframes/Inhalte, die Events schlucken */
+body.xp-dragging, body.xp-dragging * { cursor: inherit; user-select: none !important; }
+body.xp-dragging .window-body { pointer-events: none; }
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+
+.xp-button {
+  min-width: 75px;
+  height: 23px;
+  padding: 0 12px;
+  font: 11px var(--xp-font);
+  color: #000;
+  border: 1px solid #003c74;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff 0%, #ecebe6 86%, #d6d0c5 100%);
+  box-shadow: none;
+  cursor: default;
+  outline: none;
+}
+
+.xp-button:not(:disabled):hover {
+  box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a;
+}
+
+.xp-button:not(:disabled):active {
+  background: linear-gradient(180deg, #cdcac3 0%, #e3e3db 8%, #e5e5de 94%, #f2f2f1 100%);
+  box-shadow: none;
+}
+
+.xp-button:focus-visible,
+.xp-button.default {
+  box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4;
+}
+
+.xp-button:disabled { color: #aca899; border-color: #c9c7ba; background: #f5f4ea; }
+
+.xp-link {
+  color: var(--xp-link);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─── Formulare ───────────────────────────────────────────────────────────── */
+
+.xp-input,
+.xp-select {
+  height: 21px;
+  padding: 2px 4px;
+  font: 11px var(--xp-font);
+  border: 1px solid var(--xp-input-border);
+  border-radius: 0;
+  background: #fff;
+  outline: none;
+}
+
+.xp-input:focus { border-color: #3d7bad; }
+
+.xp-field {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.xp-fieldset {
+  margin: 0 0 10px;
+  padding: 8px 10px 4px;
+  border: 1px solid #d0d0bf;
+  border-radius: 4px;
+}
+
+.xp-fieldset legend { color: #0046d5; padding: 0 3px; }
+
+.xp-error-text { color: #c00; margin: 4px 0 8px; white-space: pre-wrap; }
+
+/* ─── Statusleiste / Panels ──────────────────────────────────────────────── */
+
+.xp-statusbar {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 2px 3px;
+  background: var(--xp-face);
+  border-top: 1px solid #fff;
+  box-shadow: inset 0 1px #aca899;
+}
+
+.xp-statusbar > span {
+  flex: 1;
+  padding: 1px 4px;
+  border: 1px solid;
+  border-color: #aca899 #fff #fff #aca899;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xp-loading {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: #555;
+}
+
+/* XP-Scrollbars (Chromium/Edge) */
+.xp-scroll::-webkit-scrollbar { width: 17px; height: 17px; }
+.xp-scroll::-webkit-scrollbar-track { background: #fefefe linear-gradient(90deg, #f3f1ec, #fefefe); }
+.xp-scroll::-webkit-scrollbar-thumb {
+  border: 1px solid #fff;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c8d6fb, #bacbf8 50%, #b1c3f6);
+  box-shadow: inset 0 0 0 1px #9eb6f0;
+}
+.xp-scroll::-webkit-scrollbar-button:single-button { height: 17px; background: #c8d6fb; border: 1px solid #fff; border-radius: 3px; }

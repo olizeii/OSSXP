@@ -1,0 +1,175 @@
+/* ─── Login-Dialog ───────────────────────────────────────────────────────── */
+
+.login-banner {
+  position: relative;
+  height: 72px;
+  background: linear-gradient(to right, #5a7edc 0%, #3a6bd8 40%, #2552c4 100%);
+  color: #fff;
+}
+
+.login-banner-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 18px;
+}
+
+.login-banner-title {
+  font: bold 26px 'Franklin Gothic Medium', 'Trebuchet MS', Arial, sans-serif;
+  letter-spacing: -0.5px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.login-banner-title sup { font-size: 11px; vertical-align: top; }
+.login-banner-sub { margin-top: -3px; font: italic 13px var(--xp-title-font); color: #ffb35a; }
+
+.login-banner-stripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(to right, #6b9bf2, #fff 30%, #ffb35a 60%, #f07a2a);
+}
+
+.login-form { padding: 16px 16px 12px; }
+.login-actions { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+
+/* ─── „Computer ausschalten“ ─────────────────────────────────────────────── */
+
+.shutdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  /* Der berühmte XP-Effekt: Der Bildschirm wird langsam grau */
+  animation: xp-desaturate 1.6s ease forwards;
+}
+
+@keyframes xp-desaturate {
+  from { backdrop-filter: grayscale(0) brightness(1); background: rgba(0, 0, 0, 0); }
+  to   { backdrop-filter: grayscale(1) brightness(0.85); background: rgba(0, 0, 0, 0.15); }
+}
+
+.shutdown-dialog {
+  width: 312px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 4px 14px rgba(0, 0, 0, 0.5);
+  animation: sd-in 0.25s ease-out;
+}
+
+@keyframes sd-in { from { opacity: 0; } }
+
+.sd-top {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 12px;
+  background: #00309c;
+  color: #fff;
+  font: 19px var(--xp-title-font);
+  border-radius: 0;
+}
+
+.sd-middle {
+  height: 108px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 18px;
+  background: linear-gradient(to right, #5a7edc 0%, #8ca8ec 50%, #5a7edc 100%);
+  border-top: 2px solid;
+  border-image: linear-gradient(to right, #466fd8, #fff 50%, #466fd8) 1;
+}
+
+.sd-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 80px;
+  background: none;
+  border: 0;
+  color: #fff;
+  font: 11px var(--xp-font);
+  cursor: pointer;
+  outline: none;
+}
+
+.sd-icon {
+  width: 33px;
+  height: 33px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 1px 1px 2px rgba(0, 0, 0, 0.4);
+  transition: filter 0.1s;
+}
+
+.sd-icon.standby { background: radial-gradient(circle at 30% 25%, #ffe08a, #f1a20f 60%, #c97a00); }
+.sd-icon.off     { background: radial-gradient(circle at 30% 25%, #ff9f7f, #e1400c 60%, #b02800); }
+.sd-icon.restart { background: radial-gradient(circle at 30% 25%, #b6f08f, #3fae16 60%, #237e06); }
+
+.sd-option:hover .sd-icon,
+.sd-option:focus-visible .sd-icon { filter: brightness(1.18); }
+
+.sd-bottom {
+  height: 46px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 12px;
+  background: #00309c;
+}
+
+.sd-cancel { min-width: 70px; }
+
+/* ─── Power-Bildschirme ──────────────────────────────────────────────────── */
+
+.power-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  background: #000;
+  color: #fff;
+}
+
+.power-screen.standby { cursor: none; }
+
+.power-screen.off {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  cursor: pointer;
+}
+
+.power-screen.off p { margin: 0 0 8px; color: #f68b1f; font: bold 24px Arial, sans-serif; }
+.power-screen.off small { color: #777; }
+
+.power-screen.welcome {
+  display: flex;
+  flex-direction: column;
+  background: #5a7edc;
+}
+
+.welcome-top,
+.welcome-bottom { height: 80px; background: #00309c; }
+
+.welcome-top { border-bottom: 2px solid #94b5f5; }
+.welcome-bottom { border-top: 2px solid #f19a4b; }
+
+.welcome-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: radial-gradient(circle at 25% 30%, #95b6f0, #5a7edc 55%);
+  font: 26px var(--xp-title-font);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+}

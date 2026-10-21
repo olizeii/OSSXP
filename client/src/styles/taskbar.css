@@ -1,0 +1,130 @@
+/* ─── Taskleiste ─────────────────────────────────────────────────────────── */
+
+.taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  height: var(--taskbar-h);
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(
+    to bottom,
+    #1f2f86 0, #3165c4 3%, #3682e5 6%, #4490e6 10%, #3883e5 12%, #2b71e0 15%, #2663da 18%,
+    #235bd6 20%, #2258d5 23%, #2157d6 38%, #245ddb 54%, #2562df 86%, #245fdc 89%,
+    #2158d4 92%, #1d4ec0 95%, #1941a5 98%
+  );
+}
+
+/* Grüner Start-Button */
+.start-button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0 22px 2px 9px;
+  border: 0;
+  border-radius: 0 10px 10px 0;
+  background: radial-gradient(circle at 20% 15%, #79d26b 0%, #3c9b3c 32%, #2f8f2f 60%, #227a22 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset -2px -1px 2px rgba(0, 0, 0, 0.35),
+    2px 0 3px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: italic bold 19px 'Franklin Gothic Medium', 'Trebuchet MS', Arial, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}
+
+.start-button span { margin-top: -1px; letter-spacing: 0.5px; }
+.start-button svg { filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5)); }
+.start-button:hover { filter: brightness(1.1); }
+.start-button.pressed { filter: brightness(0.82); box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.6); }
+
+/* Schnellstartleiste */
+.quick-launch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px 0 10px;
+  margin-right: 4px;
+  border-right: 1px solid #1a3b9a;
+  box-shadow: 1px 0 #4d8bec;
+}
+
+.quick-launch button {
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+}
+
+.quick-launch button:hover { border-color: #6aa3f5; background: rgba(255, 255, 255, 0.12); }
+.quick-launch img { width: 16px; height: 16px; display: block; }
+
+/* Fenster-Buttons */
+.task-buttons {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  min-width: 0;
+  padding: 3px 4px 2px;
+}
+
+.task-button {
+  flex: 0 1 160px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: #3c81f3;
+  box-shadow: inset -1px 0 #1b4ab0, inset 1px 1px #7eadfc, inset 0 -1px #1b4ab0, 1px 1px 1px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font: 11px var(--xp-font);
+  text-align: left;
+  cursor: default;
+}
+
+.task-button img { width: 16px; height: 16px; flex: none; }
+.task-button span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.task-button:hover { background: #53a3ff; }
+
+.task-button.active {
+  background: #1e52b7;
+  box-shadow: inset 1px 1px 2px #0e2d77, inset -1px -1px #3a6fd1;
+  font-weight: bold;
+}
+
+/* Infobereich (Tray) */
+.tray {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 10px;
+  border-left: 1px solid #1042af;
+  background: linear-gradient(
+    to bottom,
+    #0c59b9 1%, #139ee9 6%, #18b5f2 10%, #139beb 14%, #1290e8 19%, #0d8dea 63%,
+    #0d9ff1 81%, #0f9eed 88%, #119be9 91%, #1392e2 94%, #137ed7 97%, #095bc9 100%
+  );
+  box-shadow: inset 1px 0 1px #18bbff;
+  color: #fff;
+}
+
+.tray-icon {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.tray-clock { font: 11px var(--xp-font); white-space: nowrap; }

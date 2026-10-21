@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Untis-Verknüpfung: Kettenglieder (orange + blau) -->
+  <defs>
+    <linearGradient id="l-o" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc27a"/><stop offset="1" stop-color="#d4570a"/>
+    </linearGradient>
+    <linearGradient id="l-b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fd0ff"/><stop offset="1" stop-color="#1b56c4"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="45" rx="16" ry="2" fill="#000" opacity=".18"/>
+  <g transform="rotate(-40 24 24)">
+    <rect x="3" y="15" width="24" height="17" rx="8.5" fill="none" stroke="#8a3200" stroke-width="7"/>
+    <rect x="3" y="15" width="24" height="17" rx="8.5" fill="none" stroke="url(#l-o)" stroke-width="5"/>
+    <rect x="21" y="15" width="24" height="17" rx="8.5" fill="none" stroke="#0d3a92" stroke-width="7"/>
+    <rect x="21" y="15" width="24" height="17" rx="8.5" fill="none" stroke="url(#l-b)" stroke-width="5"/>
+    <path d="M10 14.5h12" stroke="#fff" stroke-width="1.5" opacity=".6" stroke-linecap="round"/>
+    <path d="M28 14.5h12" stroke="#fff" stroke-width="1.5" opacity=".6" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- chatterinoXP: zwei glänzende Sprechblasen (XP-Stil) -->
+  <defs>
+    <linearGradient id="c-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fd0ff"/>
+      <stop offset="0.5" stop-color="#3d8be6"/>
+      <stop offset="1" stop-color="#1650b8"/>
+    </linearGradient>
+    <linearGradient id="c-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2b8ff"/>
+      <stop offset="0.45" stop-color="#9346e0"/>
+      <stop offset="1" stop-color="#5a1aa8"/>
+    </linearGradient>
+    <linearGradient id="c-gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="25" cy="44.5" rx="17" ry="2.2" fill="#000" opacity="0.18"/>
+
+  <!-- hintere Blase -->
+  <path d="M5 6.5h24a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H15l-6 5v-5H5a4 4 0 0 1-4-4v-12a4 4 0 0 1 4-4Z"
+        fill="url(#c-back)" stroke="#0f3d93"/>
+  <path d="M5.5 8h23a3 3 0 0 1 3 3v3.5C22 12 12 12 2.5 14.5V11a3 3 0 0 1 3-3Z" fill="url(#c-gloss)"/>
+  <path d="M7 15.5h14M7 19.5h18" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- vordere Blase -->
+  <path d="M19 17h23a4.5 4.5 0 0 1 4.5 4.5V34a4.5 4.5 0 0 1-4.5 4.5h-3v6l-7-6H19a4.5 4.5 0 0 1-4.5-4.5V21.5A4.5 4.5 0 0 1 19 17Z"
+        fill="url(#c-front)" stroke="#45128a"/>
+  <path d="M19.5 18.6h22a3.2 3.2 0 0 1 3.2 3.2v4C36 23 26 23 16.2 26v-4.2a3.2 3.2 0 0 1 3.3-3.2Z" fill="url(#c-gloss)"/>
+  <circle cx="23.5" cy="30" r="2.3" fill="#fff"/>
+  <circle cx="30.5" cy="30" r="2.3" fill="#fff"/>
+  <circle cx="37.5" cy="30" r="2.3" fill="#fff"/>
+</svg>

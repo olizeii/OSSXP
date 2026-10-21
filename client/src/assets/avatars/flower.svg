@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Benutzerbild: Blume vor blauem Himmel (wie die XP-Kontobilder) -->
+  <defs>
+    <linearGradient id="av-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f86e0"/><stop offset="1" stop-color="#bfe0ff"/>
+    </linearGradient>
+    <radialGradient id="av-petal" cx="0.5" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#fff4a0"/><stop offset="1" stop-color="#f29a0c"/>
+    </radialGradient>
+    <radialGradient id="av-core" cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#b86a2a"/><stop offset="1" stop-color="#4a2408"/>
+    </radialGradient>
+  </defs>
+  <rect width="48" height="48" fill="url(#av-sky)"/>
+  <path d="M0 40c10-5 20-6 48-2v10H0Z" fill="#58a52a"/>
+  <path d="M23 26c0 8-1 14-2 22h3c1-8 1-14 1-22Z" fill="#2f7a16"/>
+  <path d="M23 38c-5-4-9-3-11-1 4 2 7 2 11 1Z" fill="#46a020"/>
+  <g transform="translate(24 20)">
+    <g fill="url(#av-petal)" stroke="#c46f00" stroke-width=".6">
+      <ellipse rx="3.6" ry="9" transform="rotate(0)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(45)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(90)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(135)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(180)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(225)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(270)" cy="-7"/>
+      <ellipse rx="3.6" ry="9" transform="rotate(315)" cy="-7"/>
+    </g>
+    <circle r="5.5" fill="url(#av-core)"/>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <!-- „Bliss“-inspiriertes Hintergrundbild (eigene Vektorgrafik): blauer Himmel, Wolken, grüner Hügel -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f5fc7"/>
+      <stop offset="0.35" stop-color="#4a8ce3"/>
+      <stop offset="0.62" stop-color="#93c0f1"/>
+      <stop offset="0.8" stop-color="#cfe5fa"/>
+    </linearGradient>
+    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fd14a"/>
+      <stop offset="0.25" stop-color="#5fb12a"/>
+      <stop offset="0.7" stop-color="#3a8a17"/>
+      <stop offset="1" stop-color="#25660c"/>
+    </linearGradient>
+    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fae3a"/>
+      <stop offset="1" stop-color="#3f7f1d"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.32" cy="0.62" r="0.35">
+      <stop offset="0" stop-color="#d6f58a" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#d6f58a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="softer" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+
+  <!-- Wolken -->
+  <g fill="#fff" filter="url(#soft)" opacity="0.85">
+    <ellipse cx="260" cy="250" rx="220" ry="55"/>
+    <ellipse cx="420" cy="215" rx="160" ry="48"/>
+    <ellipse cx="1050" cy="170" rx="260" ry="60"/>
+    <ellipse cx="1290" cy="300" rx="200" ry="45"/>
+    <ellipse cx="760" cy="420" rx="300" ry="38"/>
+  </g>
+  <g fill="#fff" filter="url(#softer)" opacity="0.9">
+    <ellipse cx="330" cy="235" rx="120" ry="28"/>
+    <ellipse cx="1120" cy="160" rx="140" ry="30"/>
+    <ellipse cx="1330" cy="290" rx="90" ry="20"/>
+  </g>
+
+  <!-- Hügel -->
+  <path d="M0 640 C 300 560 600 590 900 620 S 1400 600 1600 650 V1000 H0 Z" fill="url(#hillBack)"/>
+  <path d="M-50 720 C 250 540 750 520 1100 610 C 1300 660 1480 700 1650 760 V1000 H-50 Z" fill="url(#hillFront)"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+</svg>

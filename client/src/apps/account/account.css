@@ -1,0 +1,133 @@
+/* Benutzerkonten – Layout der XP-Systemsteuerung (blauer Aufgabenbereich links) */
+
+.cp { display: flex; height: 100%; background: #fff; }
+
+/* Aufgabenbereich (wird auch von UntisXP benutzt) */
+.cp-taskpane {
+  flex: none;
+  width: 190px;
+  padding: 12px 10px;
+  overflow: auto;
+  background: linear-gradient(to bottom, #7ba2e7, #6375d6);
+}
+
+.cp-box { margin-bottom: 12px; border-radius: 3px 3px 0 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+
+.cp-box-title {
+  padding: 5px 10px;
+  color: #215dc6;
+  font-weight: bold;
+  background: linear-gradient(to right, #fff 0%, #c6d3f7 100%);
+}
+
+.cp-box-body { padding: 8px 10px; background: #d6dff7; }
+
+.cp-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 0;
+  background: none;
+  border: 0;
+  color: #215dc6;
+  font: 11px var(--xp-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cp-task img { width: 16px; height: 16px; }
+.cp-task:hover { color: #428eff; text-decoration: underline; }
+.cp-task.active { font-weight: bold; }
+
+.cp-content { flex: 1; padding: 14px 20px; overflow: auto; }
+.cp-content p { line-height: 1.5; }
+
+.cp-heading {
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  color: #003399;
+  font: 20px var(--xp-title-font);
+  border-bottom: 1px solid #c3d0f0;
+}
+
+.cp-hint { padding: 6px 8px; background: #ffffe1; border: 1px solid #c9c9a0; }
+
+.cp-user-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cp-user-card img,
+.cp-picture-current img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  outline: 1px solid #9db2e0;
+  border-radius: 3px;
+}
+
+.cp-avatar-btn { padding: 0; background: none; border: 0; cursor: pointer; }
+.cp-avatar-btn:hover img { outline-color: #316ac5; }
+
+/* „Eigenes Bild ändern“ */
+.cp-picture { display: flex; gap: 20px; align-items: flex-start; }
+
+.cp-picture-current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 90px;
+  flex: none;
+}
+
+.cp-picture-current img { width: 72px; height: 72px; }
+
+.cp-picture-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 200px;
+  padding: 6px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--xp-input-border);
+}
+
+.cp-picture-grid button {
+  width: 58px;
+  height: 58px;
+  padding: 3px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.cp-picture-grid button img { width: 48px; height: 48px; object-fit: cover; display: block; }
+.cp-picture-grid button:hover { border-color: #c3d4f2; }
+.cp-picture-grid button.selected { border-color: #316ac5; background: #dbe7fb; }
+
+.cp-browse { display: inline-block; margin-top: 8px; }
+
+.cp-task img { object-fit: cover; }
+.cp-user-name { font: bold 15px var(--xp-title-font); margin-bottom: 2px; }
+
+.cp-colors { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 8px; }
+
+.cp-color {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.cp-color.active { outline: 2px solid #316ac5; outline-offset: 2px; }
+
+.cp-linked { display: flex; gap: 10px; align-items: center; }
+.cp-linked img { width: 32px; height: 32px; }

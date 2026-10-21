@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- UntisXP: Stundenplan-Kalender mit Ringbindung + glänzende Uhr (XP-Stil) -->
+  <defs>
+    <linearGradient id="u-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9e4f5"/>
+    </linearGradient>
+    <linearGradient id="u-head" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb066"/>
+      <stop offset="0.45" stop-color="#f26a12"/>
+      <stop offset="1" stop-color="#c94400"/>
+    </linearGradient>
+    <linearGradient id="u-ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7a8597"/>
+      <stop offset="0.5" stop-color="#f4f6fa"/>
+      <stop offset="1" stop-color="#6b7486"/>
+    </linearGradient>
+    <radialGradient id="u-clock" cx="0.35" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#e3efff"/>
+      <stop offset="1" stop-color="#8fb4ea"/>
+    </radialGradient>
+    <linearGradient id="u-bezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f8de8"/>
+      <stop offset="1" stop-color="#173f9a"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="24" cy="44.5" rx="18" ry="2.2" fill="#000" opacity="0.18"/>
+
+  <!-- Blatt -->
+  <rect x="4.5" y="7.5" width="33" height="34" rx="3" fill="url(#u-page)" stroke="#47689d"/>
+  <!-- Kopfleiste -->
+  <path d="M4.5 10.5a3 3 0 0 1 3-3h27a3 3 0 0 1 3 3v6h-33Z" fill="url(#u-head)" stroke="#a63a00"/>
+  <path d="M6 10.5a2 2 0 0 1 2-2h26a2 2 0 0 1 2 2v1.8H6Z" fill="#fff" opacity="0.45"/>
+  <text x="21" y="15.6" text-anchor="middle" font-family="Tahoma, Verdana, sans-serif" font-weight="bold" font-size="7.5" fill="#fff">UNTIS</text>
+
+  <!-- Ringe -->
+  <rect x="10" y="4" width="3" height="7" rx="1.5" fill="url(#u-ring)" stroke="#4b5568" stroke-width=".6"/>
+  <rect x="19.5" y="4" width="3" height="7" rx="1.5" fill="url(#u-ring)" stroke="#4b5568" stroke-width=".6"/>
+  <rect x="29" y="4" width="3" height="7" rx="1.5" fill="url(#u-ring)" stroke="#4b5568" stroke-width=".6"/>
+
+  <!-- Stundenplan-Raster -->
+  <g stroke="#b8c7e0" stroke-width=".8">
+    <path d="M7 23h28M7 28.5h28M7 34h28"/>
+    <path d="M14 18v21M21 18v21M28 18v21"/>
+  </g>
+  <rect x="7.6" y="18.6" width="5.8" height="3.8" rx=".8" fill="#4a90e2"/>
+  <rect x="14.6" y="18.6" width="5.8" height="3.8" rx=".8" fill="#62bb46"/>
+  <rect x="21.6" y="23.6" width="5.8" height="4.3" rx=".8" fill="#f2c230"/>
+  <rect x="7.6" y="29.1" width="5.8" height="4.3" rx=".8" fill="#e05a5a"/>
+  <rect x="14.6" y="29.1" width="5.8" height="4.3" rx=".8" fill="#4a90e2"/>
+  <rect x="28.6" y="18.6" width="5.8" height="3.8" rx=".8" fill="#9b6fd6"/>
+
+  <!-- Uhr -->
+  <circle cx="35.5" cy="35" r="10" fill="url(#u-bezel)" stroke="#0f2f78"/>
+  <circle cx="35.5" cy="35" r="7.6" fill="url(#u-clock)" stroke="#2b5cb8" stroke-width=".6"/>
+  <g stroke="#1f3f86" stroke-linecap="round">
+    <path d="M35.5 35V30.2" stroke-width="1.6"/>
+    <path d="M35.5 35l3.4 2" stroke-width="1.4"/>
+  </g>
+  <circle cx="35.5" cy="35" r="1" fill="#d23a0a"/>
+  <path d="M28.6 32.5a8 7 0 0 1 13.8 0a10 4 0 0 1-13.8 0Z" fill="#fff" opacity="0.55"/>
+</svg>

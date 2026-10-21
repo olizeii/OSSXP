@@ -1,0 +1,199 @@
+/* ─── Desktop, Wallpaper & Icons ─────────────────────────────────────────── */
+
+.shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.desktop {
+  position: absolute;
+  inset: 0 0 var(--taskbar-h) 0;
+  background: #5a8fd8 url('../assets/wallpaper.svg') center / cover no-repeat;
+}
+
+/* Icons sitzen absolut in Rasterzellen (siehe store/desktopStore.ts) */
+.desktop-icon {
+  position: absolute;
+  width: 84px;
+  touch-action: none;
+  padding: 2px 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: 1px solid transparent;
+  font: 11px var(--xp-font);
+  cursor: default;
+  outline: none;
+}
+
+.desktop-icon-img {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.desktop-icon-img img {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* XP-Auswahl: Icon bekommt eine blaue Tönung (Maske = Icon-Form) */
+.desktop-icon.selected .desktop-icon-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 97, 255, 0.5);
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+.desktop-icon-label {
+  max-width: 82px;
+  padding: 0 2px;
+  color: #fff;
+  text-align: center;
+  line-height: 13px;
+  text-shadow: 1px 1px 1px #000, 0 0 2px rgba(0, 0, 0, 0.6);
+  word-wrap: break-word;
+}
+
+.desktop-icon.selected .desktop-icon-label {
+  background: #0b61ff;
+  text-shadow: none;
+  outline: 1px dotted #fff;
+}
+
+/* Beim Ziehen: halbtransparenter „Geist“ wie unter XP */
+.desktop-icon.dragging {
+  z-index: 1;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ─── Kontextmenü ────────────────────────────────────────────────────────── */
+
+.xp-context-menu {
+  position: fixed;
+  z-index: 10002;
+  min-width: 190px;
+  padding: 2px;
+  background: #fff;
+  border: 1px solid #aca899;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.xp-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 3px 20px;
+  background: none;
+  border: 0;
+  font: 11px var(--xp-font);
+  text-align: left;
+  cursor: default;
+}
+
+.xp-context-menu button:hover { background: var(--xp-select); color: #fff; }
+.xp-context-menu hr { margin: 3px 1px; border: 0; border-top: 1px solid #aca899; }
+
+/* Fensterebene liegt über dem Desktop, lässt Klicks aber durch, wo kein Fenster ist */
+.window-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.window-layer > .xp-window { pointer-events: auto; }
+.window-layer > .xp-window.minimized { pointer-events: none; }
+
+/* Modale Ebene für Login-Dialog & Meldungen */
+.modal-layer {
+  position: absolute;
+  inset: 0 0 var(--taskbar-h) 0;
+  z-index: 9000;
+}
+
+.modal-layer.dim { background: rgba(0, 0, 0, 0.08); }
+
+.xp-dialog { box-shadow: 3px 6px 18px rgba(0, 0, 0, 0.45); }
+.xp-dialog .window-body { padding: 0; }
+
+/* Meldungsfenster (MessageBox) */
+.msgbox-body {
+  display: flex;
+  gap: 14px;
+  padding: 16px 16px 10px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.msgbox-body svg { flex: none; }
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px 12px;
+}
+
+/* ─── Boot-Screen ────────────────────────────────────────────────────────── */
+
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #fff;
+  transition: opacity 0.4s;
+}
+
+.boot-screen.fade { opacity: 0; pointer-events: none; }
+
+.boot-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.boot-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: bold 42px 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  letter-spacing: -1px;
+}
+
+.boot-brand sup { font-size: 18px; color: #f60; margin-left: 2px; }
+
+.boot-progress {
+  position: relative;
+  width: 160px;
+  height: 16px;
+  border: 2px solid #b2b2b2;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.boot-progress span {
+  position: absolute;
+  top: 2px;
+  width: 30px;
+  height: 8px;
+  background:
+    linear-gradient(90deg, transparent 0 2px, #2838c7 2px 8px, transparent 8px 12px, #2838c7 12px 18px, transparent 18px 22px, #2838c7 22px 28px, transparent 28px);
+  background-size: 30px 100%;
+  filter: drop-shadow(0 0 1px #4c66ff);
+  animation: boot-slide 1.6s linear infinite;
+}
+
+@keyframes boot-slide {
+  from { left: -30px; }
+  to { left: 160px; }
+}

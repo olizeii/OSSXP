@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Über OSSXP: Monitor im Stil von „Arbeitsplatz“ -->
+  <defs>
+    <linearGradient id="m-case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f3ee"/><stop offset="1" stop-color="#b9b6a8"/>
+    </linearGradient>
+    <linearGradient id="m-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d6fd6"/><stop offset="1" stop-color="#9cc8f5"/>
+    </linearGradient>
+    <linearGradient id="m-hill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fcf3a"/><stop offset="1" stop-color="#2f7c12"/>
+    </linearGradient>
+    <linearGradient id="m-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d8d5c8"/><stop offset="1" stop-color="#8f8b7c"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="44.5" rx="17" ry="2" fill="#000" opacity="0.2"/>
+  <path d="M17 35h14l2.5 6.5h-19Z" fill="url(#m-foot)" stroke="#6d6a5e"/>
+  <rect x="3.5" y="4.5" width="41" height="31" rx="3" fill="url(#m-case)" stroke="#6d6a5e"/>
+  <rect x="7" y="8" width="34" height="23" rx="1" fill="url(#m-sky)" stroke="#3a4d74"/>
+  <path d="M7 25c7-6 15-6.5 22-3.5s9 2 12 1V31H7Z" fill="url(#m-hill)"/>
+  <ellipse cx="16" cy="13.5" rx="6" ry="1.6" fill="#fff" opacity=".7"/>
+  <path d="M7.5 8.5h33l-33 13Z" fill="#fff" opacity=".18"/>
+  <circle cx="40" cy="33" r="1" fill="#3ec43e"/>
+</svg>

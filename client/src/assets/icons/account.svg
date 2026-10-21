@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Benutzerkonten: zwei Personen (wie XP-„Benutzerkonten“) -->
+  <defs>
+    <radialGradient id="a-head1" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#ffe6c8"/><stop offset="1" stop-color="#d79a5c"/>
+    </radialGradient>
+    <radialGradient id="a-head2" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#f7d2b0"/><stop offset="1" stop-color="#b8743a"/>
+    </radialGradient>
+    <linearGradient id="a-body1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fd36a"/><stop offset="1" stop-color="#2c8a1c"/>
+    </linearGradient>
+    <linearGradient id="a-body2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb070"/><stop offset="1" stop-color="#d0590c"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="44.5" rx="18" ry="2.2" fill="#000" opacity="0.18"/>
+
+  <!-- hintere Person -->
+  <path d="M22 41c0-9 4.5-14 11-14s11 5 11 14Z" fill="url(#a-body2)" stroke="#8a3a05"/>
+  <circle cx="33" cy="18.5" r="7.5" fill="url(#a-head2)" stroke="#8a5220"/>
+  <path d="M25.6 17c.8-5 4-7.6 7.6-7.6s6.8 2.4 7.4 7c-3-2.6-9-3.2-15 .6Z" fill="#3a2414"/>
+
+  <!-- vordere Person -->
+  <path d="M3.5 43c0-10 5.4-15.5 12.5-15.5S28.5 33 28.5 43Z" fill="url(#a-body1)" stroke="#1c5e10"/>
+  <path d="M7 36.5c1.5-4 4.6-6.2 9-6.2" stroke="#fff" stroke-width="1.6" opacity=".55" fill="none" stroke-linecap="round"/>
+  <circle cx="16" cy="19" r="8.2" fill="url(#a-head1)" stroke="#94602c"/>
+  <path d="M8 18.5c.4-6 4-8.6 8-8.6 4.4 0 7.8 2.6 8 8.2-3.6-3.4-10-4-16 .4Z" fill="#8a5a1c"/>
+  <ellipse cx="13.5" cy="15.5" rx="3" ry="1.6" fill="#fff" opacity=".5"/>
+</svg>
