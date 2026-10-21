@@ -9,7 +9,8 @@
  * Neues mitgeliefertes Bild: Datei nach src/assets/avatars/ legen und hier eintragen.
  */
 import ball from '../assets/avatars/ball.svg';
-import blissPixel from '../assets/avatars/bliss-pixel.webp';
+// Standardbild = das Desktop-Hintergrundbild (wie das Bliss-Kontobild unter XP)
+import blissPixel from '../assets/wallpaper.webp';
 import duck from '../assets/avatars/duck.svg';
 import flower from '../assets/avatars/flower.svg';
 

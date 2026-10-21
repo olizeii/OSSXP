@@ -9,8 +9,13 @@
 .desktop {
   position: absolute;
   inset: 0 0 var(--taskbar-h) 0;
-  background: #5a8fd8 url('../assets/wallpaper.svg') center / cover no-repeat;
+  /* Pixel-Art-Hintergrund: „pixelated“ hält die Pixel beim Hochskalieren scharf */
+  background: #3f86e0 url('../assets/wallpaper.webp') center / cover no-repeat;
+  image-rendering: pixelated;
 }
+
+/* Icons & Fenster sollen nicht pixelig skaliert werden */
+.desktop > * { image-rendering: auto; }
 
 /* Icons sitzen absolut in Rasterzellen (siehe store/desktopStore.ts) */
 .desktop-icon {
