@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- SudoXP: glänzendes Sudoku-Brett mit Bleistift (XP-Stil) -->
+  <defs>
+    <linearGradient id="sx-frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fb2ff"/>
+      <stop offset="0.5" stop-color="#2a6fe0"/>
+      <stop offset="1" stop-color="#123f9e"/>
+    </linearGradient>
+    <linearGradient id="sx-paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dce6f6"/>
+    </linearGradient>
+    <linearGradient id="sx-pencil" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffe066"/>
+      <stop offset="0.5" stop-color="#ffc21a"/>
+      <stop offset="1" stop-color="#d98e00"/>
+    </linearGradient>
+    <linearGradient id="sx-gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="24" cy="44.8" rx="18" ry="2.2" fill="#000" opacity="0.2"/>
+
+  <!-- Brett -->
+  <rect x="3.5" y="3.5" width="38" height="38" rx="4" fill="url(#sx-frame)" stroke="#0c2f7a"/>
+  <rect x="7" y="7" width="31" height="31" rx="1.5" fill="url(#sx-paper)" stroke="#0c2f7a" stroke-width=".8"/>
+
+  <!-- dünne Linien -->
+  <g stroke="#a9bde0" stroke-width=".6">
+    <path d="M10.4 7v31M13.9 7v31M20.8 7v31M24.3 7v31M31.1 7v31M34.6 7v31"/>
+    <path d="M7 10.4h31M7 13.9h31M7 20.8h31M7 24.3h31M7 31.1h31M7 34.6h31"/>
+  </g>
+  <!-- Blocklinien -->
+  <g stroke="#1b3f8f" stroke-width="1.3">
+    <path d="M17.3 7v31M27.7 7v31M7 17.3h31M7 27.7h31"/>
+  </g>
+
+  <!-- Ziffern -->
+  <g font-family="Tahoma, Verdana, sans-serif" font-weight="bold" text-anchor="middle">
+    <text x="12.2" y="16" font-size="8" fill="#000">5</text>
+    <text x="22.5" y="16" font-size="8" fill="#1d5fe0">3</text>
+    <text x="33" y="26.3" font-size="8" fill="#000">7</text>
+    <text x="12.2" y="26.3" font-size="8" fill="#1d5fe0">9</text>
+    <text x="22.5" y="36.4" font-size="8" fill="#d42020">1</text>
+  </g>
+  <!-- markiertes Feld -->
+  <rect x="28" y="7.3" width="9.7" height="9.7" fill="#316ac5" opacity=".85"/>
+  <text x="33" y="16" font-family="Tahoma, Verdana, sans-serif" font-weight="bold" font-size="8" fill="#fff" text-anchor="middle">8</text>
+
+  <!-- Glanz -->
+  <path d="M4.5 7.5a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v6C28 10 17 10 4.5 13.5Z" fill="url(#sx-gloss)"/>
+
+  <!-- Bleistift -->
+  <g transform="rotate(45 37 37)">
+    <rect x="34" y="20" width="6" height="20" fill="url(#sx-pencil)" stroke="#8a5a00" stroke-width=".7"/>
+    <rect x="34" y="17" width="6" height="3.5" fill="#f08aa0" stroke="#8a5a00" stroke-width=".7"/>
+    <rect x="34" y="20" width="6" height="1.6" fill="#c9cdd4" stroke="#6b6f78" stroke-width=".5"/>
+    <path d="M34 40l3 6 3-6Z" fill="#f3d3a0" stroke="#8a5a00" stroke-width=".7" stroke-linejoin="round"/>
+    <path d="M36.2 44.4 37 46l.8-1.6Z" fill="#333"/>
+    <path d="M36 21.6v18.4" stroke="#fff" stroke-width=".8" opacity=".6"/>
+  </g>
+</svg>

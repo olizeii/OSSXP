@@ -1,7 +1,8 @@
 # OSSXP
 
 Eine Web-Desktop-Umgebung im Windows-XP-Design („Luna“): Fenster, Taskleiste, Startmenü, Login –
-plus die Apps **UntisXP** (Stundenplan-Dashboard) und **chatterinoXP** (Echtzeit-Chat mit 7TV- & BTTV-Emotes).
+plus die Apps **UntisXP** (Stundenplan-Dashboard), **chatterinoXP** (Echtzeit-Chat mit 7TV- & BTTV-Emotes)
+und das „vorinstallierte“ Spiel **SudoXP** (Sudoku).
 
 - **Frontend:** React 19 + Vite + TypeScript, State mit Zustand
 - **Backend:** Node.js + Express 5, Socket.IO, SQLite (better-sqlite3)
@@ -43,6 +44,7 @@ OSSXP/
 │     │  ├─ registry.ts      # ⭐ Hier werden alle Apps registriert
 │     │  ├─ untisxp/         # UntisXP
 │     │  ├─ chatterinoxp/    # chatterinoXP
+│     │  ├─ sudoxp/          # SudoXP (Sudoku-Generator + Spiel)
 │     │  ├─ account/         # Benutzerkonten (Chat-Farbe, Untis verknüpfen)
 │     │  └─ about/           # Über OSSXP
 │     ├─ assets/             # XP-Icons (SVG), Avatare, Wallpaper
@@ -112,6 +114,9 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
 
 - **UntisXP**: nur eingeloggt **und** mit verknüpftem Untis-Account. Sonst erscheint eine XP-Meldung mit „Anmelden“ bzw. „Jetzt verknüpfen“; nach dem Login startet die App automatisch.
 - **chatterinoXP**: für alle offen. Gäste sind im **Zuschauer-Modus** (nur lesen) – das erzwingt der Server, nicht nur die UI. Beim Start ist immer der allgemeine Channel aktiv.
+- **SudoXP**: für alle spielbar. Drei Schwierigkeitsgrade, jedes Rätsel ist zufällig und eindeutig lösbar.
+  Tasten: 1–9 setzen · Entf löschen · Pfeiltasten · N = Notizen · H = Tipp · Strg+Z = Rückgängig · F2 = Neues Spiel.
+  Spielstand und Bestzeiten werden im Browser gespeichert.
 - Beim Abmelden werden Fenster geschlossen, deren Voraussetzungen nicht mehr erfüllt sind.
 
 ## Eine neue App hinzufügen
