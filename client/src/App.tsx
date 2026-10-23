@@ -11,7 +11,9 @@ import { Taskbar } from './components/taskbar/Taskbar';
 import { WindowManager } from './components/window/WindowManager';
 import { WinFlag } from './components/xp/Glyphs';
 import { Clippy } from './components/clippy/Clippy';
-import { enforceRequirements } from './core/launcher';
+import { enforceRequirements, launchApp } from './core/launcher';
+import { useUiStore } from './store/uiStore';
+import { useWindowStore } from './store/windowStore';
 import { getSocket, reconnectSocket } from './core/socket';
 import { useAuthStore } from './store/authStore';
 import { initEconomy } from './store/economyStore';
@@ -28,8 +30,30 @@ export default function App() {
     const t = setTimeout(() => setBootDone(true), BOOT_MS);
 
     // Gemeinsame Echtzeit-Verbindung (Chat + Live-Updates für Coins/Level/Abzeichen)
-    getSocket();
+    const socket = getSocket();
     const stopEconomy = initEconomy();
+
+    // Rang geändert (z. B. zum Moderator ernannt) → Profil neu laden
+    socket.on('account:update', () => useAuthStore.getState().fetchMe());
+
+    // Privatnachricht, während der Chat nicht im Vordergrund ist → Sprechblase am Infobereich
+    socket.on('dm:message', (m: { from: string; text: string }) => {
+      if (m.from === useAuthStore.getState().user?.username) return;
+      const { windows, activeId } = useWindowStore.getState();
+      const chat = windows.find((w) => w.appId === 'chatterinoxp');
+      if (chat && chat.id === activeId && !chat.minimized) return;
+      useUiStore.getState().notify({ title: `Nachricht von ${m.from}`, text: m.text.length > 80 ? `${m.text.slice(0, 80)}…` : m.text, icon: 'info' });
+    });
+
+    // Deep-Links: ?app=redxp&sub=3ahit öffnet die App mit diesen Parametern (z. B. private Subreddits teilen)
+    const query = new URLSearchParams(location.search);
+    const deepApp = query.get('app');
+    if (deepApp) {
+      query.delete('app');
+      const params = Object.fromEntries(query);
+      history.replaceState(null, '', location.pathname);
+      setTimeout(() => launchApp(deepApp, params), BOOT_MS + 300);
+    }
 
     const unsubscribe = useAuthStore.subscribe((state, prev) => {
       // Fenster schließen, deren Voraussetzungen nicht mehr erfüllt sind (Abmelden, Untis entknüpft …)

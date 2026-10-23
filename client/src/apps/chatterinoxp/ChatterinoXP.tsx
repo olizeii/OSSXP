@@ -1,21 +1,23 @@
 /**
  * chatterinoXP – Chat-Client im Stil von Chatterino:
- * Tabs oben, Split-Kopf mit Channelname, kompakte Nachrichtenzeilen mit Zeitstempel,
- * farbigen Namen und 7TV-/BTTV-Emotes, Eingabezeile mit Tab-Vervollständigung.
+ * Tabs oben (Channels und Privatnachrichten „@name“), Split-Kopf mit Channelname, kompakte
+ * Nachrichtenzeilen mit Zeitstempel, Rang-Symbol, Abzeichen, farbigen Namen und Emotes
+ * (7TV, BTTV, FFZ, OSSXP-Set), Eingabezeile mit Tab-Vervollständigung und Befehlen (/w, /timeout, /help).
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { UserName } from '../../components/user/UserBits';
+import { api } from '../../core/api';
 import type { AppWindowProps } from '../../core/types';
-import { useAuthStore } from '../../store/authStore';
+import { hasRank, useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useWindowStore } from '../../store/windowStore';
-import { useChatStore, type ChatMessage } from './chatStore';
-import { PROVIDER_LABEL, tokenize, useEmotes, type Emote, type EmoteMap } from './emotes';
+import { isDm, useChatStore, type ChatMessage, type Conversation } from './chatStore';
+import { PROVIDER_LABEL, reloadEmotes, tokenize, useEmotes, type Emote, type EmoteMap } from './emotes';
 import './chatterino.css';
 
 const MAX_LENGTH = 500;
 
-export default function ChatterinoXP({ windowId }: AppWindowProps) {
+export default function ChatterinoXP({ windowId, params }: AppWindowProps) {
   const username = useAuthStore((s) => s.user?.username ?? null);
   const chat = useChatStore();
   const emotes = useEmotes();
@@ -28,6 +30,15 @@ export default function ChatterinoXP({ windowId }: AppWindowProps) {
     return () => useChatStore.getState().disconnect();
   }, []);
 
+  // Aus dem Profil: „Nachricht senden“ → Privatnachrichten-Tab öffnen
+  useEffect(() => {
+    const dm = params?.dm as string | undefined;
+    if (!dm) return;
+    const open = () => useChatStore.getState().openTab(`@${dm}`);
+    if (useChatStore.getState().connected) open();
+    else return useChatStore.subscribe((s, prev) => s.connected && !prev.connected && open());
+  }, [params]);
+
   // Fenstertitel wie bei Chatterino: „chatterinoXP – <user>“
   useEffect(() => {
     useWindowStore.getState().setTitle(windowId, `chatterinoXP – ${username ?? 'Zuschauer'}`);
@@ -36,6 +47,7 @@ export default function ChatterinoXP({ windowId }: AppWindowProps) {
   const active = chat.active;
   const messages = active ? (chat.messages[active] ?? []) : [];
   const addable = chat.channels.filter((c) => !chat.tabs.includes(c));
+  const dm = active ? isDm(active) : false;
 
   return (
     <div className="ct" onMouseLeave={() => setTooltip(null)}>
@@ -43,14 +55,32 @@ export default function ChatterinoXP({ windowId }: AppWindowProps) {
 
       <div className="ct-split">
         <div className="ct-header">
-          <span className="ct-header-left" title="Zuschauer im Channel">
-            {active ? `${chat.viewers[active] ?? 0} 👁` : ''}
+          <span className="ct-header-left" title={dm ? 'Privatnachricht' : 'Zuschauer im Channel'}>
+            {active && !dm ? `${chat.viewers[active] ?? 0} Zuschauer` : dm ? 'privat' : ''}
           </span>
           <span className="ct-header-title">
-            {active ?? '…'}
+            {dm ? `Privat: ${active!.slice(1)}` : (active ?? '…')}
             {chat.connected ? '' : ' (getrennt)'}
           </span>
-          <span className="ct-header-right">{chat.readOnly ? 'Zuschauer' : ''}</span>
+          <span className="ct-header-right">
+            {chat.readOnly ? 'Zuschauer' : ''}
+            {chat.canModerate && active && !dm && active !== chat.channels[0] && (
+              <button
+                className="ct-header-btn"
+                title="Channel löschen (Moderation)"
+                onClick={() =>
+                  useUiStore.getState().showMessage({
+                    title: 'chatterinoXP',
+                    icon: 'warning',
+                    text: `Channel #${active} für alle löschen?`,
+                    buttons: [{ label: 'Löschen', primary: true, action: () => chat.deleteChannel(active) }, { label: 'Abbrechen' }],
+                  })
+                }
+              >
+                ✕
+              </button>
+            )}
+          </span>
         </div>
 
         <MessageList
@@ -93,15 +123,38 @@ export default function ChatterinoXP({ windowId }: AppWindowProps) {
 // ─── Tabs ──────────────────────────────────────────────────────────────────
 
 function TabBar({ addable }: { addable: string[] }) {
-  const { tabs, active, unread, setActive, closeTab, openTab } = useChatStore();
+  const { tabs, active, unread, setActive, closeTab, openTab, readOnly, canCreateChannels, createChannel, listConversations } = useChatStore();
   const [menu, setMenu] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [input, setInput] = useState<'dm' | 'channel' | null>(null);
+  const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (menu && !readOnly) listConversations().then(setConversations);
+  }, [menu, readOnly, listConversations]);
+
+  async function submit() {
+    const name = value.trim().replace(/^[@#]/, '');
+    if (!name) return;
+    if (input === 'dm') {
+      openTab(`@${name}`);
+    } else {
+      const err = await createChannel(name);
+      if (err) return setError(err);
+    }
+    setInput(null);
+    setValue('');
+    setError('');
+    setMenu(false);
+  }
 
   return (
     <div className="ct-tabs">
       {tabs.map((t) => (
         <button
           key={t}
-          className={`ct-tab ${t === active ? 'active' : ''} ${unread[t] ? 'unread' : ''}`}
+          className={`ct-tab ${t === active ? 'active' : ''} ${unread[t] ? 'unread' : ''} ${isDm(t) ? 'dm' : ''}`}
           onClick={() => setActive(t)}
           onAuxClick={(e) => e.button === 1 && closeTab(t)}
           title={tabs.length > 1 ? 'Mittlere Maustaste: Tab schließen' : undefined}
@@ -121,22 +174,37 @@ function TabBar({ addable }: { addable: string[] }) {
         </button>
       ))}
       <div className="ct-tab-add-wrap">
-        <button className="ct-tab-add" onClick={() => setMenu((v) => !v)} disabled={addable.length === 0} title="Channel hinzufügen">
+        <button className="ct-tab-add" onClick={() => setMenu((v) => !v)} title="Channel oder Privatnachricht öffnen">
           +
         </button>
-        {menu && addable.length > 0 && (
-          <div className="ct-menu" onMouseLeave={() => setMenu(false)}>
+        {menu && (
+          <div className="ct-menu" onMouseLeave={() => !input && setMenu(false)}>
+            {addable.length > 0 && <span className="ct-menu-head">Channels</span>}
             {addable.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  openTab(c);
-                  setMenu(false);
-                }}
-              >
+              <button key={c} onClick={() => (openTab(c), setMenu(false))}>
                 #{c}
               </button>
             ))}
+            {!readOnly && (
+              <>
+                <span className="ct-menu-head">Privatnachrichten</span>
+                {conversations.map((c) => (
+                  <button key={c.partner.username} onClick={() => (openTab(`@${c.partner.username}`), setMenu(false))}>
+                    <span style={{ color: c.partner.color }}>@{c.partner.username}</span>
+                    {c.unread > 0 && <span className="ct-unread">{c.unread}</span>}
+                  </button>
+                ))}
+                <button onClick={() => setInput('dm')}>+ Neue Privatnachricht…</button>
+              </>
+            )}
+            {canCreateChannels && <button onClick={() => setInput('channel')}>+ Neuer Channel… (Moderation)</button>}
+            {input && (
+              <form className="ct-menu-form" onSubmit={(e) => (e.preventDefault(), submit())}>
+                <input autoFocus placeholder={input === 'dm' ? 'Benutzername' : 'channel-name'} value={value} onChange={(e) => setValue(e.target.value)} />
+                <button type="submit">OK</button>
+                {error && <span className="ct-menu-error">{error}</span>}
+              </form>
+            )}
           </div>
         )}
       </div>
@@ -210,7 +278,7 @@ const MessageLine = memo(function MessageLine({ msg, emotes, me }: { msg: ChatMe
   return (
     <div className={`ct-msg ${mentioned ? 'highlight' : ''}`}>
       <span className="ct-time">{time}</span>{' '}
-      <UserName className="ct-name" username={msg.user.username} color={msg.user.color} badges={msg.user.badges} />
+      <UserName className="ct-name" username={msg.user.username} color={msg.user.color} badges={msg.user.badges} rank={msg.user.rank} />
       <span className="ct-colon">:</span>{' '}
       {tokens.map((t, i) => {
         switch (t.type) {
@@ -335,32 +403,128 @@ function ChatInput({ emotes, placeholder, messages }: { emotes: EmoteMap; placeh
   );
 }
 
+type PickerTab = 'all' | Emote['provider'] | 'search';
+const PICKER_TABS: [PickerTab, string][] = [
+  ['all', 'Alle'],
+  ['7tv', '7TV'],
+  ['bttv', 'BTTV'],
+  ['ffz', 'FFZ'],
+  ['ossxp', 'OSSXP'],
+  ['search', '+ 7TV-Suche'],
+];
+const PICKER_LIMIT = 300;
+
+interface SearchResult {
+  id: string;
+  name: string;
+  animated: boolean;
+  owner: string | null;
+  url: string;
+}
+
 function EmotePicker({ emotes, onPick, onClose }: { emotes: EmoteMap; onPick: (name: string) => void; onClose: () => void }) {
-  const [tab, setTab] = useState<Emote['provider']>('7tv');
+  const user = useAuthStore((s) => s.user);
+  const [tab, setTab] = useState<PickerTab>('all');
   const [query, setQuery] = useState('');
-  const list = [...emotes.values()].filter((e) => e.provider === tab && e.name.toLowerCase().includes(query.toLowerCase()));
+  const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [status, setStatus] = useState('');
+  const q = query.trim().toLowerCase();
+
+  const list = useMemo(
+    () =>
+      tab === 'search'
+        ? []
+        : [...emotes.values()].filter((e) => (tab === 'all' || e.provider === tab) && (!q || e.name.toLowerCase().includes(q))),
+    [emotes, tab, q],
+  );
+
+  // 7TV-Katalog durchsuchen (kurz verzögert, damit nicht jeder Tastendruck eine Anfrage auslöst)
+  useEffect(() => {
+    if (tab !== 'search' || q.length < 2) return setResults(null);
+    const t = setTimeout(() => {
+      setStatus('Suche…');
+      api<{ results: SearchResult[] }>(`/emotes/search?q=${encodeURIComponent(query.trim())}`).then(
+        (r) => (setResults(r.results), setStatus('')),
+        (e: Error) => setStatus(e.message),
+      );
+    }, 350);
+    return () => clearTimeout(t);
+  }, [tab, q, query]);
+
+  async function add(r: SearchResult) {
+    setStatus('');
+    try {
+      await api('/emotes/custom', { method: 'POST', body: { id: r.id, name: r.name, animated: r.animated } });
+      setStatus(`„${r.name}“ ist jetzt für alle verfügbar.`);
+      reloadEmotes();
+    } catch (e) {
+      setStatus((e as Error).message);
+    }
+  }
+
+  async function remove(name: string) {
+    await api(`/emotes/custom/${encodeURIComponent(name)}`, { method: 'DELETE' }).catch(() => {});
+    reloadEmotes();
+  }
+
+  const canAdd = hasRank(user, 'verified');
 
   return (
     <div className="ct-picker" onKeyDown={(e) => e.key === 'Escape' && onClose()}>
       <div className="ct-picker-tabs">
-        {(['7tv', 'bttv'] as const).map((p) => (
+        {PICKER_TABS.map(([p, label]) => (
           <button key={p} className={tab === p ? 'active' : ''} onClick={() => setTab(p)}>
-            {PROVIDER_LABEL[p]}
+            {label}
           </button>
         ))}
         <button className="ct-picker-close" onClick={onClose}>
           ×
         </button>
       </div>
-      <input autoFocus className="ct-picker-search" placeholder="Suchen…" value={query} onChange={(e) => setQuery(e.target.value)} />
-      <div className="ct-picker-grid">
-        {list.length === 0 && <span className="ct-picker-empty">Keine Emotes gefunden.</span>}
-        {list.map((e) => (
-          <button key={e.id} title={e.name} onClick={() => onPick(e.name)}>
-            <img src={e.url} alt={e.name} loading="lazy" />
-          </button>
-        ))}
-      </div>
+      <input
+        autoFocus
+        className="ct-picker-search"
+        placeholder={tab === 'search' ? 'Ganz 7TV durchsuchen, z. B. „peepoSad“…' : `In ${emotes.size} Emotes suchen…`}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {tab === 'search' ? (
+        <div className="ct-picker-grid ct-search-grid">
+          {!canAdd && <span className="ct-picker-empty">Emotes hinzufügen können Nutzer:innen ab Rang „Verifiziert“ (Untis verknüpft).</span>}
+          {status && <span className="ct-picker-status">{status}</span>}
+          {q.length < 2 && <span className="ct-picker-empty">Fehlt ein Emote? Hier findest du jedes 7TV-Emote und kannst es für alle hinzufügen.</span>}
+          {results?.length === 0 && <span className="ct-picker-empty">Nichts gefunden.</span>}
+          {results?.map((r) => {
+            const exists = emotes.has(r.name);
+            return (
+              <div key={r.id} className="ct-search-item" title={r.owner ? `von ${r.owner}` : r.name}>
+                <img src={r.url} alt={r.name} loading="lazy" />
+                <span>{r.name}</span>
+                <button disabled={!canAdd || exists} onClick={() => add(r)}>
+                  {exists ? 'vorhanden' : 'Hinzufügen'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="ct-picker-grid">
+          {list.length === 0 && <span className="ct-picker-empty">Keine Emotes gefunden – probiere die 7TV-Suche.</span>}
+          {list.slice(0, PICKER_LIMIT).map((e) => (
+            <span key={`${e.provider}-${e.id}`} className="ct-picker-cell">
+              <button title={`${e.name} (${PROVIDER_LABEL[e.provider]})`} onClick={() => onPick(e.name)}>
+                <img src={e.url} alt={e.name} loading="lazy" />
+              </button>
+              {tab === 'ossxp' && user?.isModerator && (
+                <button className="ct-picker-remove" title="Aus dem OSSXP-Set entfernen" onClick={() => remove(e.name)}>
+                  ×
+                </button>
+              )}
+            </span>
+          ))}
+          {list.length > PICKER_LIMIT && <span className="ct-picker-empty">… und {list.length - PICKER_LIMIT} weitere – Suchbegriff eingeben.</span>}
+        </div>
+      )}
     </div>
   );
 }

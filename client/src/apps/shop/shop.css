@@ -18,9 +18,19 @@
 }
 
 .shop-card.equipped { border-color: #3c9b3c; box-shadow: 0 0 0 1px #3c9b3c inset; }
-.shop-preview { width: 100%; height: 70px; border: 1px solid #777; border-radius: 3px; }
-.shop-preview.frame-bg { display: grid; place-items: center; background: linear-gradient(160deg, #0a3ab5, #7fb6ff); }
-.shop-frame { width: 40px; height: 40px; border-radius: 3px; background: #fff url('../../assets/avatars/flower.svg') center / cover; }
+.shop-card b { text-align: center; }
+.shop-preview { position: relative; width: 100%; height: 76px; overflow: hidden; border: 1px solid #777; border-radius: 3px; }
+.shop-preview.frame-bg { display: grid; place-items: center; overflow: visible; background: linear-gradient(160deg, #0a3ab5, #7fb6ff); }
+.shop-preview.avatar-bg { display: grid; place-items: center; background: linear-gradient(#f3f6fd, #dfe7f5); }
+.shop-preview.avatar-bg img { width: 64px; height: 64px; object-fit: cover; border: 2px solid #fff; border-radius: 3px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.shop-preview.clippy-bg { display: grid; place-items: center; height: 96px; background: #fff; }
+.shop-preview.clippy-bg .clippy-preview { border: 0; padding: 0; }
+.shop-anim { padding: 0 4px; color: #fff; background: #d9730d; border-radius: 6px; font-size: 9px; vertical-align: 1px; }
+.shop-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.shop-head .cp-heading { flex: 1; }
+.shop-filter { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; white-space: nowrap; }
+.shop-radio { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; }
+.shop-submit { max-width: 520px; }
 .shop-price { display: flex; align-items: center; gap: 4px; color: #8a6400; font-weight: bold; }
 .shop-card .xp-button { min-width: 100px; }
 

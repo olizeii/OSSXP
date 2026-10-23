@@ -7,7 +7,7 @@
  *   GET    /api/molly/uploads?school=&class=&kind=test|notes
  *   GET    /api/molly/files/:id                   Datei ansehen
  *   POST   /api/molly/uploads                     multipart: file, kind, title, subject, description, anonymous
- *   DELETE /api/molly/uploads/:id                 eigener Upload oder Admin
+ *   DELETE /api/molly/uploads/:id                 eigener Upload oder Moderation (Moderator/Admin)
  *
  * Ansehen ist ohne Login möglich. Hochladen nur mit Untis-Verknüpfung – und nur in die eigene Klasse:
  * Schule und Klasse bestimmt der SERVER über Untis, nicht der Browser.
@@ -17,8 +17,9 @@
 import path from 'node:path';
 import { Router } from 'express';
 import { db, untisLinks } from '../db.js';
-import { award } from '../economy/service.js';
-import { isAdmin, requireAuth } from '../middleware/auth.js';
+import { award, grantBadge } from '../economy/service.js';
+import { requireAuth } from '../middleware/auth.js';
+import { can } from '../roles.js';
 import { UntisError } from '../untis/errors.js';
 import { untisFor } from '../untis/service.js';
 import { createUpload, handleUpload, removeFile, uploadRoot } from '../uploads.js';
@@ -143,6 +144,8 @@ mollyRouter.get('/uploads', (req, res) => {
     // Anonym = kein Name, keine ID – nichts, was Rückschlüsse erlaubt
     author: m.anonymous || !m.username ? null : { username: m.username, color: m.color },
     mine: Boolean(req.user && m.uploader_id === req.user.id),
+    // Eigene Uploads oder Moderation (Moderator:innen und Admins)
+    canDelete: Boolean(req.user && (m.uploader_id === req.user.id || can(req.user, 'moderate'))),
   }));
   res.json({ school, className, kind, items });
 });
@@ -151,6 +154,13 @@ mollyRouter.get('/files/:id', (req, res) => {
   const item = stmt.upload.get(Number(req.params.id));
   if (!item) return res.status(404).json({ error: 'Datei nicht gefunden.' });
   stmt.view.run(item.id);
+  // Qualität statt Masse: Wird ein Upload oft angesehen, bekommt der Uploader eine Belohnung
+  // (eigene Aufrufe zählen nicht, jede Stufe nur einmal)
+  const views = item.views + 1;
+  if (item.uploader_id && item.uploader_id !== req.user?.id && [10, 50, 100, 500].includes(views)) {
+    award(item.uploader_id, 'molly.views_milestone', `${item.id}:${views}`);
+    if (views >= 50) grantBadge(item.uploader_id, 'helpful');
+  }
   res.set('Content-Type', item.mime);
   res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(item.file_name)}`);
   res.sendFile(path.join(uploadRoot, 'molly', path.basename(item.file_path)));
@@ -195,7 +205,9 @@ mollyRouter.post('/uploads', requireAuth, handleUpload(upload.single('file')), a
 mollyRouter.delete('/uploads/:id', requireAuth, async (req, res) => {
   const item = stmt.upload.get(Number(req.params.id));
   if (!item) return res.status(404).json({ error: 'Nicht gefunden.' });
-  if (item.uploader_id !== req.user.id && !isAdmin(req.user)) return res.status(403).json({ error: 'Nur eigene Uploads können gelöscht werden.' });
+  if (item.uploader_id !== req.user.id && !can(req.user, 'moderate')) {
+    return res.status(403).json({ error: 'Nur eigene Uploads oder als Moderator:in löschbar.' });
+  }
   stmt.remove.run(item.id);
   removeFile({ path: path.join(uploadRoot, 'molly', path.basename(item.file_path)) });
   res.json({ ok: true });

@@ -49,6 +49,8 @@ db.exec(`
 // ─── Migrationen für bestehende Datenbanken ────────────────────────────────
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
 if (!userColumns.includes('avatar')) db.exec('ALTER TABLE users ADD COLUMN avatar TEXT');
+// Gespeicherte Rolle: 'user' | 'moderator' | 'admin' (Stammgast/Verifiziert/Neu werden berechnet, siehe roles.js)
+if (!userColumns.includes('role')) db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
 
 // ─── Users ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +61,9 @@ const stmt = {
     'INSERT INTO users (username, password_hash, color, created_at) VALUES (?, ?, ?, ?)',
   ),
   updateColor: db.prepare('UPDATE users SET color = ? WHERE id = ?'),
+  updateRole: db.prepare('UPDATE users SET role = ? WHERE id = ?'),
+  countRole: db.prepare('SELECT COUNT(*) AS n FROM users WHERE role = ?'),
+  listRole: db.prepare('SELECT * FROM users WHERE role = ? ORDER BY username'),
   updateAvatar: db.prepare('UPDATE users SET avatar = ? WHERE id = ?'),
 
   linkByUser: db.prepare('SELECT * FROM untis_links WHERE user_id = ?'),
@@ -87,6 +92,9 @@ export const users = {
     return users.findById(info.lastInsertRowid);
   },
   setColor: (id, color) => stmt.updateColor.run(color, id),
+  setRole: (id, role) => stmt.updateRole.run(role, id),
+  countRole: (role) => stmt.countRole.get(role).n,
+  withRole: (role) => stmt.listRole.all(role),
   setAvatar: (id, avatar) => stmt.updateAvatar.run(avatar, id),
 };
 

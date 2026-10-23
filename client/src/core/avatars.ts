@@ -13,6 +13,7 @@ import ball from '../assets/avatars/ball.svg';
 import blissPixel from '../assets/wallpaper.webp';
 import duck from '../assets/avatars/duck.svg';
 import flower from '../assets/avatars/flower.svg';
+import { AVATAR_ART } from './cosmetics';
 
 export interface AvatarPreset {
   id: string;
@@ -29,9 +30,14 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
 
 export const DEFAULT_AVATAR = AVATAR_PRESETS[0];
 
-/** Löst den gespeicherten Wert in eine anzeigbare Bild-URL auf. */
+/** Löst den gespeicherten Wert in eine anzeigbare Bild-URL auf (inkl. gekaufter Shop-Avatare „item:<id>“). */
 export function avatarUrl(avatar: string | null | undefined): string {
   if (avatar?.startsWith('data:image/')) return avatar;
+  if (avatar?.startsWith('item:')) {
+    const id = avatar.slice(5);
+    // Eigene (hochgeladene) Artikel liegen auf dem Server, die festen haben eine SVG-Grafik
+    return id.startsWith('c-') ? `/api/economy/items/${id}/image` : (AVATAR_ART[id] ?? DEFAULT_AVATAR.url);
+  }
   if (avatar?.startsWith('preset:')) {
     return AVATAR_PRESETS.find((p) => `preset:${p.id}` === avatar)?.url ?? DEFAULT_AVATAR.url;
   }

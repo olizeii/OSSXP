@@ -5,6 +5,12 @@
 import { create } from 'zustand';
 import { api } from '../core/api';
 
+export type Rank = 'admin' | 'moderator' | 'regular' | 'verified' | 'new';
+
+/** Reihenfolge der Ränge – höherer Rang hat alle Rechte der niedrigeren. */
+export const RANK_ORDER: Record<Rank, number> = { new: 1, verified: 2, regular: 3, moderator: 4, admin: 5 };
+export const hasRank = (user: { rank: Rank } | null | undefined, min: Rank) => Boolean(user) && RANK_ORDER[user!.rank] >= RANK_ORDER[min];
+
 export interface UntisLinkInfo {
   server: string;
   school: string;
@@ -15,8 +21,12 @@ export interface User {
   id: number;
   username: string;
   color: string;
-  /** Admin laut ADMIN_USERNAMES (z. B. für NewsXP) */
+  /** Rang (5 Stufen) – siehe server/src/roles.js */
+  rank: Rank;
+  rankLabel: string;
   isAdmin: boolean;
+  /** Moderator:in oder Admin */
+  isModerator: boolean;
   /** null = Standardbild, sonst "preset:<id>" oder data:-URL – siehe core/avatars.ts */
   avatar: string | null;
   createdAt: number;

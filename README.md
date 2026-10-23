@@ -128,6 +128,23 @@ npm start
 
 Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKIE_SECURE=true` und `NODE_ENV=production` setzen.
 
+**Test-Admin:** Beim ersten Start ohne Admin wird im Entwicklungsmodus automatisch das Konto **`admin` / `admin1234`** angelegt.
+Bitte danach das Passwort ändern bzw. in Produktion `SEED_ADMIN_PASSWORD` (und optional `SEED_ADMIN_USERNAME`) setzen –
+ohne diese Variable wird dort kein Admin angelegt.
+
+## Ränge
+
+| Rang | Wie | Darf zusätzlich |
+| --- | --- | --- |
+| ♦ **Admin** | Seed-Konto oder `ADMIN_USERNAMES` | NewsXP verwalten, Moderator:innen ernennen (im Profil) |
+| ⚔ **Moderator** | vom Admin ernannt | Chat-Channels anlegen, Timeouts, fremde Inhalte löschen, Workshop-Artikel in den Shop hochladen |
+| ♛ **Stammgast** | automatisch ab Level 8 (+ Abzeichen) | eigene Subreddits gründen (privat bis 10 Mitglieder) |
+| ✓ **Verifiziert** | Untis verknüpft | Links posten, 7TV-Emotes hinzufügen |
+| **Neu** | frisch registriert | lesen, schreiben, abstimmen – ohne Links, mit Slow-Mode im Chat |
+
+Level haben keine Obergrenze, jedes Level braucht 15 % mehr XP. Belohnungen haben Cooldowns, Tageslimits und werden bei
+Wiederholung kleiner – Spammen bringt nichts (und im Chat gibt es automatische Timeouts). Details: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md).
+
 ## Bedienung
 
 | Aktion | Wie |
@@ -135,9 +152,11 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
 | App starten | Doppelklick auf Desktop-Icon, Startmenü, Schnellstart oder „Alle Programme“ |
 | Anmelden / Registrieren | Startmenü → Kopfbereich „Anmelden“ (oder Tray-Symbol unten rechts) |
 | Untis verknüpfen | Startmenü → „Untis-Verknüpfung“ (App *Benutzerkonten*) |
-| Profil ansehen | Auf einen Namen klicken (Chat, redXP, Bestenliste, MollyXP) – eigenes Profil unter *Benutzerkonten → Mein Profil* |
-| Coins ausgeben | Punkteshop (oder Klick auf die Coins unten rechts in der Taskleiste) |
-| Clippy ein/aus | Rechtsklick auf Clippy oder Startmenü → „Clippy ein-/ausblenden“ |
+| Profil ansehen | Desktop-Icon **Profil** (eigenes Profil) oder auf einen Namen klicken (Chat, redXP, Bestenliste, MollyXP) |
+| Profil gestalten | Im eigenen Profil → „Profil bearbeiten“: Theme, Status, Vitrinen (Reihenfolge), Info-Box, Lieblingsabzeichen, Avatar, Clippy-Outfit |
+| Coins ausgeben | Punkteshop (oder Klick auf die Coins unten rechts in der Taskleiste) – inkl. animierter Hintergründe, Rahmen und Avatare |
+| Privatnachricht | Im Profil „Nachricht senden“ oder im Chat `/w name text` bzw. „+“ → „Neue Unterhaltung“ |
+| Clippy ein/aus | Rechtsklick auf Clippy oder Startmenü → „Clippy ein-/ausblenden“; Hüte & Brillen gibt es im Shop |
 | Profilbild ändern | Startmenü → auf das eigene Bild klicken → „Eigenes Bild ändern“ (Galerie oder eigenes Bild hochladen) |
 | Desktop-Icons verschieben | Icon ziehen – rastet im Raster ein; Rechtsklick auf den Desktop → „Symbole automatisch anordnen“ |
 | Seite schließen | Startmenü → „Seite schließen“ → klassischer „Computer ausschalten“-Dialog |
@@ -152,8 +171,11 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
   Schüler-Accounts ohne Leserechte bekommen automatische Fallbacks (Lehrkräfte aus der Wochenansicht, Vertretungen aus den Stundenplänen).
   Nur eingeloggt **und** mit verknüpftem Untis-Account. Sonst erscheint eine XP-Meldung mit „Anmelden“ bzw. „Jetzt verknüpfen“; nach dem Login startet die App automatisch.
 - **chatterinoXP**: für alle offen. Gäste sind im **Zuschauer-Modus** (nur lesen) – das erzwingt der Server, nicht nur die UI. Beim Start ist immer der allgemeine Channel aktiv.
-- **redXP / MollyXP / NewsXP**: Lesen ohne Login. Schreiben/Abstimmen mit Login; Hochladen in MollyXP zusätzlich nur mit
-  Untis-Verknüpfung (Klasse wird über Untis geprüft); News veröffentlichen nur mit `ADMIN_USERNAMES`.
+- **redXP / MollyXP / NewsXP**: Lesen ohne Login. Schreiben/Abstimmen/Kommentieren mit Login; Hochladen in MollyXP zusätzlich nur mit
+  Untis-Verknüpfung (Klasse wird über Untis geprüft). redXP hat eine globale Suche und zeigt Rang & Abzeichen neben Namen
+  (abschaltbar unter *Einstellungen*). Private Subreddits teilt man per Link (`/?app=redxp&sub=name`).
+  Moderator:innen und Admins können Beiträge, Kommentare und Uploads löschen. NewsXP-Admins verwalten Beiträge, Poster
+  und Kommentare über **Verwaltung** in der Symbolleiste.
 - **SudoXP**: für alle spielbar. Im täglichen Sudoku erscheint man ohne Login als „Anonym“.
   Coins/Abzeichen gibt es nur mit Konto.
 - **Klassisches SudoXP**: Drei Schwierigkeitsgrade, jedes Rätsel ist zufällig und eindeutig lösbar.
@@ -214,8 +236,10 @@ Aus anderem Code heraus öffnen: `launchApp('meine-app', { beliebige: 'parameter
 
 ## Emotes
 
-chatterinoXP lädt die globalen Emotes von **7TV** und **BetterTTV** (inkl. Zero-Width-/Overlay-Emotes) über `/api/emotes`.
-Zusätzliche Channel-Emotes: in `server/.env` bei `EMOTE_TWITCH_IDS` die Twitch-User-IDs eintragen (kommagetrennt).
+chatterinoXP lädt die globalen Emotes von **7TV**, **BetterTTV** und **FrankerFaceZ** (inkl. Zero-Width-/Overlay-Emotes) über `/api/emotes`,
+dazu die Channel-Sets einiger großer Streamer (Pepe & Co.). Eigene Twitch-User-IDs: `EMOTE_TWITCH_IDS` in `server/.env` (kommagetrennt).
+Fehlt ein Emote, können verifizierte Nutzer:innen es im Emote-Picker über **„+ 7TV-Suche“** zum gemeinsamen OSSXP-Set hinzufügen
+(Moderation kann es wieder entfernen). Twitch-eigene Sub-Emotes brauchen Twitch-Login und sind daher nur als 7TV-Kopie verfügbar.
 Im Chat: **Tab** vervollständigt Emotes und Namen, ☺ öffnet den Emote-Picker, Hover zeigt eine Emote-Vorschau.
 
 ## Auf GitHub veröffentlichen

@@ -282,6 +282,29 @@
 .ct-picker-grid button:hover { background: #3a3a3a; }
 .ct-picker-grid img { max-width: 34px; max-height: 30px; }
 .ct-picker-empty { padding: 8px; color: #777; }
+.ct-picker-status { width: 100%; padding: 4px 8px; color: #8fd18f; }
+.ct-picker-cell { position: relative; }
+.ct-picker-remove { position: absolute; top: -2px; right: -2px; width: 14px !important; height: 14px !important; padding: 0; color: #fff; background: #c0392b !important; border-radius: 50% !important; font-size: 10px; line-height: 1; }
+.ct-search-grid { flex-direction: column; flex-wrap: nowrap; }
+.ct-search-item { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-bottom: 1px solid #333; }
+.ct-search-item img { height: 28px; width: auto; max-width: 56px; }
+.ct-search-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-search-item button { width: auto !important; height: 22px !important; padding: 0 8px; color: #fff; background: var(--ct-accent) !important; border-radius: 2px; font: 11px 'Segoe UI', Tahoma, sans-serif; }
+.ct-search-item button:disabled { background: #444 !important; color: #999; cursor: default; }
+
+/* Plus-Menü: Überschriften, Formular */
+.ct-menu { min-width: 200px; }
+.ct-menu-head { display: block; padding: 4px 10px 2px; color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ct-menu button { display: flex !important; justify-content: space-between; }
+.ct-unread { padding: 0 5px; color: #fff; background: var(--ct-accent); border-radius: 8px; font-size: 10px; }
+.ct-menu-form { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-top: 1px solid #444; }
+.ct-menu-form input { flex: 1; min-width: 0; padding: 2px 6px; color: #eee; background: #111; border: 1px solid #555; }
+.ct-menu-form button { width: auto !important; padding: 2px 10px !important; background: var(--ct-accent) !important; color: #fff !important; }
+.ct-menu-error { width: 100%; color: #ff8a8a; font-size: 11px; }
+.ct-tab.dm { font-style: italic; }
+.ct-header-btn { margin-left: 6px; padding: 0 5px; color: #bbb; background: none; border: 1px solid #555; border-radius: 2px; cursor: pointer; }
+.ct-header-btn:hover { color: #fff; border-color: #c0392b; background: #5a1e1e; }
+.ct-picker-tabs { flex-wrap: wrap; }
 
 /* Emote-Tooltip (position: fixed, relativ zum Viewport) */
 .ct-tooltip {

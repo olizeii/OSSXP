@@ -90,6 +90,17 @@
 .rx-comment-form.compact { margin: 4px 0 4px 22px; }
 .rx-login-hint { margin: 0; color: #555; }
 
+/* Suche, Kopf-Aktionen, private Subreddits */
+.rx-searchbar { display: flex; gap: 4px; margin-bottom: 10px; }
+.rx-searchbar .xp-input { flex: 1; height: 23px; }
+.rx-header-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.rx-private { padding: 1px 6px; color: #fff; background: #777; border-radius: 8px; font: 10px var(--xp-font); vertical-align: 4px; }
+.rx-lock { font-size: 9px; }
+.rx-delete { color: #b02a2a !important; }
+.rx-search h3 { margin: 12px 0 6px; color: #0046d5; font: bold 12px var(--xp-font); }
+.rx-search-subs { margin: 0; padding: 0 0 0 4px; list-style: none; line-height: 1.8; }
+.rx-check { display: flex; align-items: center; gap: 6px; }
+
 /* Formulare */
 .rx-form { max-width: 560px; }
 .rx-field-top { align-items: start; }

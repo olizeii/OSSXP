@@ -121,6 +121,7 @@ sudokuRouter.post('/daily/submit', submitLimiter, (req, res) => {
     if (streak >= 3) grantBadge(userId, 'sudoku-streak-3');
     if (streak >= 7) grantBadge(userId, 'sudoku-streak-7');
     if (rank === 1) grantBadge(userId, 'sudoku-fastest');
+    if (rank <= 3) award(userId, 'sudoku.podium', token.d); // Qualitäts-Bonus für die Top 3
   }
   res.json({ date: token.d, seconds, rank, total: stmt.total.get(token.d).n, reward });
 });

@@ -62,11 +62,16 @@ function topWindow(windows: WindowState[], exceptId?: string) {
 }
 
 /** Startposition: gemerkte Bounds oder zentriert + kaskadiert wie unter XP. */
-function initialBounds(app: AppDefinition, remembered: Bounds | undefined, openCount: number): Bounds {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight - TASKBAR_HEIGHT;
-  const width = Math.min(remembered?.width ?? app.window?.width ?? 640, vw);
-  const height = Math.min(remembered?.height ?? app.window?.height ?? 440, vh);
+function initialBounds(app: AppDefinition, rememberedBounds: Bounds | undefined, openCount: number): Bounds {
+  // Hintergrund-Tabs melden mitunter 0 × 0 – dann mit einer üblichen Größe rechnen
+  const vw = window.innerWidth || 1024;
+  const vh = (window.innerHeight || 768) - TASKBAR_HEIGHT;
+  const minW = Math.min(app.window?.minWidth ?? 200, vw);
+  const minH = Math.min(app.window?.minHeight ?? 120, vh);
+  // Kaputte gemerkte Größen (z. B. 0 px breit) ignorieren
+  const remembered = rememberedBounds && rememberedBounds.width >= minW && rememberedBounds.height >= minH ? rememberedBounds : undefined;
+  const width = Math.max(minW, Math.min(remembered?.width ?? app.window?.width ?? 640, vw));
+  const height = Math.max(minH, Math.min(remembered?.height ?? app.window?.height ?? 440, vh));
 
   if (remembered) {
     return {
@@ -96,9 +101,10 @@ export const useWindowStore = create<WindowStore>()(
       open(app, params) {
         const { windows, remembered, zCounter } = get();
 
-        // Single-Instance-Apps: vorhandenes Fenster fokussieren und Parameter aktualisieren
-        if (app.singleInstance !== false) {
-          const existing = windows.find((w) => w.appId === app.id);
+        // Single-Instance-Apps (oder gleicher instanceKey): vorhandenes Fenster fokussieren und Parameter aktualisieren
+        if (app.singleInstance !== false || app.instanceKey) {
+          const key = app.instanceKey?.(params);
+          const existing = windows.find((w) => w.appId === app.id && (!app.instanceKey || app.instanceKey(w.params) === key));
           if (existing) {
             set({
               windows: windows.map((w) =>

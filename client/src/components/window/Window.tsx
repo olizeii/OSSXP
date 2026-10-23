@@ -141,7 +141,15 @@ class AppErrorBoundary extends Component<{ appTitle: string; children: ReactNode
         <div>
           <b>{this.props.appTitle}</b> hat ein Problem festgestellt und muss beendet werden.
           <p style={{ color: '#666' }}>{this.state.error.message}</p>
-          <button className="xp-button" onClick={() => this.setState({ error: null })}>
+          <button
+            className="xp-button"
+            onClick={() =>
+              // Fehlende Programmdateien (neuer Build) lassen sich nur durch Neuladen der Seite beheben
+              /preload|dynamically imported module|Failed to fetch/i.test(this.state.error?.message ?? '')
+                ? location.reload()
+                : this.setState({ error: null })
+            }
+          >
             Neu starten
           </button>
         </div>

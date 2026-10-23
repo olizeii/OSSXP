@@ -1,16 +1,18 @@
 /**
  * redXP – Reddit-artiges Forum im XP-Look.
- * Links die Subreddits, rechts Beiträge mit Up-/Downvotes, Detailansicht mit Kommentarbaum.
+ * Links die Subreddits, oben globale Suche und Einstellungen, rechts Beiträge mit Up-/Downvotes,
+ * Detailansicht mit Kommentarbaum. Namen zeigen Rang und (abschaltbar) Abzeichen wie im Chat.
  *
- * Economy: Der Client meldet nur Aktionen (Beitrag, Kommentar, Stimme) an /api/red/*.
- * Coins/XP vergibt der Server (red.post, red.comment, red.upvote_received für den Autor)
- * und schickt sie live per `economy:update` an den economyStore – hier ist dafür kein Code nötig.
+ * Rechte: Beiträge/Kommentare/Stimmen mit Login; eigene Subreddits ab „Stammgast“ – sie starten
+ * privat (nur per Link) und werden ab 10 Mitgliedern automatisch öffentlich. Löschen: Autor:in oder Moderation.
+ * Economy: Coins/XP vergibt der Server und meldet sie live – hier ist dafür kein Code nötig.
  */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../../core/api';
 import type { AppWindowProps } from '../../core/types';
 import { Anonymous, UserName } from '../../components/user/UserBits';
-import { useAuthStore } from '../../store/authStore';
+import { hasRank, useAuthStore, type Rank } from '../../store/authStore';
+import { useEconomyStore } from '../../store/economyStore';
 import { useUiStore } from '../../store/uiStore';
 import { useWindowStore } from '../../store/windowStore';
 import '../account/account.css';
@@ -21,11 +23,17 @@ interface Sub {
   title: string;
   description: string;
   postCount: number;
+  members: number;
+  isMember: boolean;
+  listed: boolean;
+  official: boolean;
 }
 
 interface Author {
   username: string;
   color: string;
+  rank?: Rank;
+  badges?: string[];
 }
 
 interface Post {
@@ -38,6 +46,7 @@ interface Post {
   createdAt: number;
   author: Author | null;
   myVote: number;
+  canDelete: boolean;
 }
 
 interface Comment {
@@ -48,9 +57,21 @@ interface Comment {
   createdAt: number;
   author: Author | null;
   myVote: number;
+  canDelete: boolean;
 }
 
 type Sort = 'hot' | 'new' | 'top';
+
+// ─── Einstellungen (pro Browser) ───────────────────────────────────────────
+
+const SETTINGS_KEY = 'ossxp-redxp-settings';
+function loadSettings(): { showBadges: boolean } {
+  try {
+    return { showBadges: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') };
+  } catch {
+    return { showBadges: true };
+  }
+}
 
 /** „vor 5 Min.“, „vor 3 Std.“, „vor 2 Tagen“ */
 export function timeAgo(ts: number) {
@@ -68,17 +89,36 @@ function requireLogin(action: () => void) {
   else useUiStore.getState().openLogin();
 }
 
-export default function RedXP({ windowId }: AppWindowProps) {
+const confirmDelete = (what: string, run: () => void) =>
+  useUiStore.getState().showMessage({
+    title: 'redXP',
+    icon: 'warning',
+    text: `${what} wirklich löschen?`,
+    buttons: [{ label: 'Löschen', primary: true, action: run }, { label: 'Abbrechen' }],
+  });
+
+export default function RedXP({ windowId, params }: AppWindowProps) {
   const [subs, setSubs] = useState<Sub[]>([]);
+  const [publicAt, setPublicAt] = useState(10);
   const [sub, setSub] = useState<string | null>(null); // null = Startseite (alle)
+  const [linkedSub, setLinkedSub] = useState<Sub | null>(null); // per Link geöffnetes (privates) Subreddit
   const [sort, setSort] = useState<Sort>('hot');
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [openPost, setOpenPost] = useState<number | null>(null);
-  const [composer, setComposer] = useState<'post' | 'sub' | null>(null);
+  const [view, setView] = useState<'list' | 'newPost' | 'newSub' | 'search' | 'settings'>('list');
+  const [query, setQuery] = useState('');
+  const [settings, setSettings] = useState(loadSettings);
   const [error, setError] = useState('');
   const userId = useAuthStore((s) => s.user?.id);
 
-  const loadSubs = useCallback(() => api<{ subs: Sub[] }>('/red/subs').then((r) => setSubs(r.subs)), []);
+  const loadSubs = useCallback(
+    () =>
+      api<{ subs: Sub[]; publicAt: number }>('/red/subs').then((r) => {
+        setSubs(r.subs);
+        setPublicAt(r.publicAt);
+      }),
+    [],
+  );
   const loadPosts = useCallback(() => {
     setError('');
     const q = new URLSearchParams({ sort, ...(sub ? { sub } : {}) });
@@ -87,13 +127,61 @@ export default function RedXP({ windowId }: AppWindowProps) {
 
   useEffect(() => {
     loadSubs().catch(() => {});
-  }, [loadSubs]);
+  }, [loadSubs, userId]);
   useEffect(loadPosts, [loadPosts, userId]);
 
-  const current = subs.find((s) => s.name === sub);
+  // Deep-Link / Profil: { sub } oder { post }
+  useEffect(() => {
+    if (params?.sub) openSub(String(params.sub));
+    if (params?.post) setOpenPost(Number(params.post));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
+  /** Subreddit öffnen – auch private, die nicht in der Liste stehen (Zugang per Link). */
+  function openSub(name: string) {
+    setOpenPost(null);
+    setView('list');
+    setSub(name);
+    api<{ sub: Sub }>(`/red/subs/${encodeURIComponent(name)}`).then(
+      (r) => setLinkedSub(r.sub),
+      () => setLinkedSub(null),
+    );
+  }
+
+  const current = subs.find((s) => s.name.toLowerCase() === sub?.toLowerCase()) ?? (linkedSub?.name.toLowerCase() === sub?.toLowerCase() ? linkedSub : null);
+
   useEffect(() => {
     useWindowStore.getState().setTitle(windowId, `redXP – ${sub ? `r/${sub}` : 'Startseite'}`);
   }, [windowId, sub]);
+
+  function saveSettings(next: typeof settings) {
+    setSettings(next);
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    } catch {
+      /* egal */
+    }
+  }
+
+  async function membership(join: boolean) {
+    if (!current) return;
+    try {
+      const r = await api<{ sub: Sub }>(`/red/subs/${current.name}/${join ? 'join' : 'leave'}`, { method: 'POST' });
+      setLinkedSub(r.sub);
+      loadSubs();
+    } catch (e) {
+      useUiStore.getState().showMessage({ title: 'redXP', icon: 'error', text: (e as Error).message });
+    }
+  }
+
+  function copyLink() {
+    if (!current) return;
+    const url = `${location.origin}/?app=redxp&sub=${encodeURIComponent(current.name)}`;
+    navigator.clipboard
+      ?.writeText(url)
+      .then(() => useUiStore.getState().notify({ title: 'Link kopiert', text: url, icon: 'info' }))
+      .catch(() => useUiStore.getState().showMessage({ title: 'Link zum Teilen', icon: 'info', text: url }));
+  }
 
   return (
     <div className="cp rx">
@@ -101,7 +189,7 @@ export default function RedXP({ windowId }: AppWindowProps) {
         <div className="cp-box">
           <div className="cp-box-title">Feeds</div>
           <div className="cp-box-body">
-            <button className={`cp-task ${sub === null ? 'active' : ''}`} onClick={() => (setSub(null), setOpenPost(null))}>
+            <button className={`cp-task ${sub === null && view === 'list' ? 'active' : ''}`} onClick={() => (setSub(null), setOpenPost(null), setView('list'))}>
               Startseite (alle)
             </button>
           </div>
@@ -110,35 +198,82 @@ export default function RedXP({ windowId }: AppWindowProps) {
           <div className="cp-box-title">Subreddits</div>
           <div className="cp-box-body">
             {subs.map((s) => (
-              <button key={s.name} className={`cp-task ${sub === s.name ? 'active' : ''}`} onClick={() => (setSub(s.name), setOpenPost(null))} title={s.description}>
-                r/{s.name} <span className="rx-count">{s.postCount}</span>
+              <button key={s.name} className={`cp-task ${sub === s.name ? 'active' : ''}`} onClick={() => openSub(s.name)} title={s.description}>
+                r/{s.name} {!s.listed && <span className="rx-lock" title="Privat">🔒</span>}
+                <span className="rx-count">{s.postCount}</span>
               </button>
             ))}
-            <button className="cp-task rx-new-sub" onClick={() => requireLogin(() => setComposer('sub'))}>
+            <button className="cp-task rx-new-sub" onClick={() => requireLogin(() => setView('newSub'))}>
               + Neues Subreddit…
+            </button>
+          </div>
+        </div>
+        <div className="cp-box">
+          <div className="cp-box-title">Weitere Aufgaben</div>
+          <div className="cp-box-body">
+            <button className="cp-task" onClick={() => setView('settings')}>
+              Einstellungen
             </button>
           </div>
         </div>
       </aside>
 
       <main className="cp-content xp-scroll rx-main">
-        {composer === 'sub' ? (
-          <SubForm onDone={(name) => (setComposer(null), name && (loadSubs(), setSub(name)))} />
-        ) : composer === 'post' ? (
-          <PostForm subs={subs} defaultSub={sub ?? subs[0]?.name ?? ''} onDone={(id) => (setComposer(null), id && (loadPosts(), setOpenPost(id)))} />
+        <form
+          className="rx-searchbar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (query.trim().length >= 2) (setOpenPost(null), setView('search'));
+          }}
+        >
+          <input className="xp-input" placeholder="redXP durchsuchen – Subreddits und Beiträge…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button className="xp-button">Suchen</button>
+        </form>
+
+        {view === 'settings' ? (
+          <Settings settings={settings} onChange={saveSettings} onClose={() => setView('list')} />
+        ) : view === 'search' ? (
+          <SearchResults query={query} showBadges={settings.showBadges} onOpenSub={openSub} onOpenPost={(id) => (setView('list'), setOpenPost(id))} />
+        ) : view === 'newSub' ? (
+          <SubForm publicAt={publicAt} onDone={(name) => (setView('list'), name && (loadSubs(), openSub(name)))} />
+        ) : view === 'newPost' ? (
+          <PostForm subs={current && !subs.includes(current) ? [...subs, current] : subs} defaultSub={sub ?? subs[0]?.name ?? ''} onDone={(id) => (setView('list'), id && (loadPosts(), setOpenPost(id)))} />
         ) : openPost ? (
-          <PostDetail id={openPost} onBack={() => (setOpenPost(null), loadPosts())} />
+          <PostDetail id={openPost} showBadges={settings.showBadges} onBack={() => (setOpenPost(null), loadPosts())} />
         ) : (
           <>
             <div className="rx-header">
               <div>
-                <h1>{current ? `r/${current.name}` : 'redXP'}</h1>
-                <span className="rx-muted">{current ? current.description : 'Beiträge aus allen Subreddits der Schule'}</span>
+                <h1>
+                  {current ? `r/${current.name}` : sub ? `r/${sub}` : 'redXP'}{' '}
+                  {current && !current.listed && <span className="rx-private">privat</span>}
+                </h1>
+                <span className="rx-muted">
+                  {current ? `${current.description || current.title} · ${current.members} Mitglieder` : 'Beiträge aus allen Subreddits der Schule'}
+                </span>
               </div>
-              <button className="xp-button default" onClick={() => requireLogin(() => setComposer('post'))}>
-                Neuer Beitrag
-              </button>
+              <div className="rx-header-actions">
+                {current && userId && !current.official && (
+                  <button className="xp-button" onClick={() => membership(!current.isMember)}>
+                    {current.isMember ? 'Austreten' : 'Beitreten'}
+                  </button>
+                )}
+                {current && !current.listed && (
+                  <button className="xp-button" onClick={copyLink} title="Private Subreddits sind nur per Link erreichbar">
+                    Link kopieren
+                  </button>
+                )}
+                <button className="xp-button default" onClick={() => requireLogin(() => setView('newPost'))}>
+                  Neuer Beitrag
+                </button>
+              </div>
             </div>
+            {current && !current.listed && (
+              <p className="cp-hint">
+                Dieses Subreddit ist noch privat und nur per Link erreichbar. Ab {publicAt} Mitgliedern wird es automatisch öffentlich
+                ({current.members}/{publicAt}).
+              </p>
+            )}
             <div className="rx-sort" role="tablist">
               {(
                 [
@@ -162,36 +297,126 @@ export default function RedXP({ windowId }: AppWindowProps) {
                 <span>Starte die erste Diskussion!</span>
               </div>
             ) : (
-              <ul className="rx-posts">
-                {posts.map((p) => (
-                  <li key={p.id} className="rx-post">
-                    <Votes type="post" id={p.id} score={p.score} myVote={p.myVote} />
-                    <div className="rx-post-main" onClick={() => setOpenPost(p.id)}>
-                      <span className="rx-meta">
-                        <button
-                          className="rx-sub-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSub(p.sub);
-                          }}
-                        >
-                          r/{p.sub}
-                        </button>{' '}
-                        · von {p.author ? <UserName username={p.author.username} color={p.author.color} /> : <Anonymous />} · {timeAgo(p.createdAt)}
-                      </span>
-                      <h2>{p.title}</h2>
-                      {p.body && <p className="rx-preview">{p.body.length > 220 ? `${p.body.slice(0, 220)}…` : p.body}</p>}
-                      <span className="rx-meta rx-comments-count">
-                        {p.commentCount} {p.commentCount === 1 ? 'Kommentar' : 'Kommentare'}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <PostList posts={posts} showBadges={settings.showBadges} onOpen={setOpenPost} onOpenSub={openSub} onDeleted={loadPosts} />
             )}
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// ─── Listen & Namen ────────────────────────────────────────────────────────
+
+function AuthorName({ author, showBadges }: { author: Author | null; showBadges: boolean }) {
+  if (!author) return <Anonymous />;
+  return <UserName username={author.username} color={author.color} rank={showBadges ? author.rank : undefined} badges={showBadges ? author.badges : undefined} />;
+}
+
+function PostList({
+  posts,
+  showBadges,
+  onOpen,
+  onOpenSub,
+  onDeleted,
+}: {
+  posts: Post[];
+  showBadges: boolean;
+  onOpen: (id: number) => void;
+  onOpenSub: (name: string) => void;
+  onDeleted?: () => void;
+}) {
+  return (
+    <ul className="rx-posts">
+      {posts.map((p) => (
+        <li key={p.id} className="rx-post">
+          <Votes type="post" id={p.id} score={p.score} myVote={p.myVote} />
+          <div className="rx-post-main" onClick={() => onOpen(p.id)}>
+            <span className="rx-meta">
+              <button
+                className="rx-sub-link"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenSub(p.sub);
+                }}
+              >
+                r/{p.sub}
+              </button>{' '}
+              · von <AuthorName author={p.author} showBadges={showBadges} /> · {timeAgo(p.createdAt)}
+            </span>
+            <h2>{p.title}</h2>
+            {p.body && <p className="rx-preview">{p.body.length > 220 ? `${p.body.slice(0, 220)}…` : p.body}</p>}
+            <span className="rx-meta">
+              {p.commentCount} {p.commentCount === 1 ? 'Kommentar' : 'Kommentare'}
+              {p.canDelete && onDeleted && (
+                <>
+                  {' · '}
+                  <button
+                    className="ux-link rx-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmDelete('Diesen Beitrag', () => api(`/red/posts/${p.id}`, { method: 'DELETE' }).then(onDeleted));
+                    }}
+                  >
+                    Löschen
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SearchResults({ query, showBadges, onOpenSub, onOpenPost }: { query: string; showBadges: boolean; onOpenSub: (n: string) => void; onOpenPost: (id: number) => void }) {
+  const [data, setData] = useState<{ subs: Pick<Sub, 'name' | 'title' | 'description'>[]; posts: Post[] } | null>(null);
+  useEffect(() => {
+    setData(null);
+    api<{ subs: Sub[]; posts: Post[] }>(`/red/search?q=${encodeURIComponent(query.trim())}`).then(setData, () => setData({ subs: [], posts: [] }));
+  }, [query]);
+
+  if (!data) return <p className="rx-muted">Suche…</p>;
+  return (
+    <div className="rx-search">
+      <h1 className="cp-heading">Suchergebnisse für „{query.trim()}“</h1>
+      <h3>Subreddits</h3>
+      {data.subs.length === 0 ? (
+        <p className="rx-muted">Keine passenden Subreddits.</p>
+      ) : (
+        <ul className="rx-search-subs">
+          {data.subs.map((s) => (
+            <li key={s.name}>
+              <button className="ux-link" onClick={() => onOpenSub(s.name)}>
+                r/{s.name}
+              </button>{' '}
+              <span className="rx-muted">{s.description || s.title}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h3>Beiträge</h3>
+      {data.posts.length === 0 ? <p className="rx-muted">Keine passenden Beiträge.</p> : <PostList posts={data.posts} showBadges={showBadges} onOpen={onOpenPost} onOpenSub={onOpenSub} />}
+    </div>
+  );
+}
+
+function Settings({ settings, onChange, onClose }: { settings: { showBadges: boolean }; onChange: (s: { showBadges: boolean }) => void; onClose: () => void }) {
+  return (
+    <div className="rx-form">
+      <h1 className="cp-heading">Einstellungen</h1>
+      <fieldset className="xp-fieldset">
+        <legend>Anzeige</legend>
+        <label className="rx-check">
+          <input type="checkbox" checked={settings.showBadges} onChange={(e) => onChange({ ...settings, showBadges: e.target.checked })} />
+          Rang-Symbole und Abzeichen neben Namen anzeigen (wie im chatterinoXP)
+        </label>
+      </fieldset>
+      <p className="rx-muted">Einstellungen gelten für diesen Browser.</p>
+      <button className="xp-button default" onClick={onClose}>
+        OK
+      </button>
     </div>
   );
 }
@@ -236,7 +461,7 @@ function Votes({ type, id, score: initialScore, myVote: initialVote, horizontal 
 
 // ─── Beitrag mit Kommentaren ───────────────────────────────────────────────
 
-function PostDetail({ id, onBack }: { id: number; onBack: () => void }) {
+function PostDetail({ id, showBadges, onBack }: { id: number; showBadges: boolean; onBack: () => void }) {
   const [data, setData] = useState<{ post: Post; comments: Comment[] } | null>(null);
   const [error, setError] = useState('');
   const reload = useCallback(() => api<{ post: Post; comments: Comment[] }>(`/red/posts/${id}`).then(setData, (e: Error) => setError(e.message)), [id]);
@@ -261,7 +486,15 @@ function PostDetail({ id, onBack }: { id: number; onBack: () => void }) {
         <Votes type="post" id={post.id} score={post.score} myVote={post.myVote} />
         <div className="rx-post-main">
           <span className="rx-meta">
-            r/{post.sub} · von {post.author ? <UserName username={post.author.username} color={post.author.color} /> : <Anonymous />} · {timeAgo(post.createdAt)}
+            r/{post.sub} · von <AuthorName author={post.author} showBadges={showBadges} /> · {timeAgo(post.createdAt)}
+            {post.canDelete && (
+              <>
+                {' · '}
+                <button className="ux-link rx-delete" onClick={() => confirmDelete('Diesen Beitrag', () => api(`/red/posts/${post.id}`, { method: 'DELETE' }).then(onBack))}>
+                  Löschen
+                </button>
+              </>
+            )}
           </span>
           <h2>{post.title}</h2>
           {post.body && <p className="rx-body selectable">{post.body}</p>}
@@ -273,24 +506,31 @@ function PostDetail({ id, onBack }: { id: number; onBack: () => void }) {
       <h3 className="rx-comments-title">
         {data.comments.length} {data.comments.length === 1 ? 'Kommentar' : 'Kommentare'}
       </h3>
-      <CommentList parentId={null} tree={tree} postId={post.id} onPosted={reload} />
+      <CommentList parentId={null} tree={tree} postId={post.id} showBadges={showBadges} onChanged={reload} />
     </div>
   );
 }
 
-function CommentList({ parentId, tree, postId, onPosted }: { parentId: number | null; tree: Map<number | null, Comment[]>; postId: number; onPosted: () => void }) {
-  const items = tree.get(parentId) ?? [];
+interface CommentListProps {
+  tree: Map<number | null, Comment[]>;
+  postId: number;
+  showBadges: boolean;
+  onChanged: () => void;
+}
+
+function CommentList({ parentId, ...rest }: CommentListProps & { parentId: number | null }) {
+  const items = rest.tree.get(parentId) ?? [];
   if (items.length === 0) return null;
   return (
     <ul className={`rx-comments ${parentId ? 'nested' : ''}`}>
       {items.map((c) => (
-        <CommentItem key={c.id} comment={c} tree={tree} postId={postId} onPosted={onPosted} />
+        <CommentItem key={c.id} comment={c} {...rest} />
       ))}
     </ul>
   );
 }
 
-function CommentItem({ comment: c, tree, postId, onPosted }: { comment: Comment; tree: Map<number | null, Comment[]>; postId: number; onPosted: () => void }) {
+function CommentItem({ comment: c, ...rest }: CommentListProps & { comment: Comment }) {
   const [replying, setReplying] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   return (
@@ -299,7 +539,7 @@ function CommentItem({ comment: c, tree, postId, onPosted }: { comment: Comment;
         <button className="rx-collapse" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Aufklappen' : 'Zuklappen'}>
           {collapsed ? '[+]' : '[–]'}
         </button>
-        {c.author ? <UserName username={c.author.username} color={c.author.color} /> : <Anonymous />}
+        <AuthorName author={c.author} showBadges={rest.showBadges} />
         <span className="rx-muted">· {timeAgo(c.createdAt)}</span>
       </div>
       {!collapsed && (
@@ -310,9 +550,14 @@ function CommentItem({ comment: c, tree, postId, onPosted }: { comment: Comment;
             <button className="ux-link rx-reply" onClick={() => requireLogin(() => setReplying((v) => !v))}>
               Antworten
             </button>
+            {c.canDelete && (
+              <button className="ux-link rx-reply rx-delete" onClick={() => confirmDelete('Diesen Kommentar', () => api(`/red/comments/${c.id}`, { method: 'DELETE' }).then(rest.onChanged))}>
+                Löschen
+              </button>
+            )}
           </div>
-          {replying && <CommentForm postId={postId} parentId={c.id} onPosted={() => (setReplying(false), onPosted())} compact />}
-          <CommentList parentId={c.id} tree={tree} postId={postId} onPosted={onPosted} />
+          {replying && <CommentForm postId={rest.postId} parentId={c.id} onPosted={() => (setReplying(false), rest.onChanged())} compact />}
+          <CommentList parentId={c.id} {...rest} />
         </>
       )}
     </li>
@@ -415,11 +660,28 @@ function PostForm({ subs, defaultSub, onDone }: { subs: Sub[]; defaultSub: strin
   );
 }
 
-function SubForm({ onDone }: { onDone: (name?: string) => void }) {
+function SubForm({ publicAt, onDone }: { publicAt: number; onDone: (name?: string) => void }) {
+  const user = useAuthStore((s) => s.user);
+  const stammgastLevel = useEconomyStore((s) => s.catalog?.stammgastLevel ?? 8);
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+
+  if (!hasRank(user, 'regular')) {
+    return (
+      <div className="rx-form">
+        <h1 className="cp-heading">Neues Subreddit</h1>
+        <p className="cp-hint">
+          Eigene Subreddits können ab dem Rang <b>Stammgast</b> gegründet werden (automatisch ab Level {stammgastLevel}). Du bist aktuell{' '}
+          <b>{user?.rankLabel}</b>. Sammle XP durch tägliche Besuche, hilfreiche Uploads und gute Beiträge!
+        </p>
+        <button className="xp-button" onClick={() => onDone()}>
+          Zurück
+        </button>
+      </div>
+    );
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -435,7 +697,10 @@ function SubForm({ onDone }: { onDone: (name?: string) => void }) {
   return (
     <form className="rx-form" onSubmit={submit}>
       <h1 className="cp-heading">Neues Subreddit</h1>
-      <p className="cp-hint">Zum Beispiel eines für deine Klasse: r/3AHIT. Erlaubt sind Buchstaben, Ziffern und _.</p>
+      <p className="cp-hint">
+        Neue Subreddits sind zuerst <b>privat</b> – teile den Link mit deiner Klasse. Ab {publicAt} Mitgliedern werden sie automatisch für alle sichtbar.
+        Name: Buchstaben, Ziffern und _ (z. B. 3AHIT).
+      </p>
       <label className="xp-field">
         <span>Name: r/</span>
         <input className="xp-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={24} required />

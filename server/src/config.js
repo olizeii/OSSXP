@@ -74,7 +74,11 @@ export const config = {
   },
 
   emotes: {
-    twitchIds: list(process.env.EMOTE_TWITCH_IDS),
+    /**
+     * Twitch-IDs großer Kanäle, deren 7TV-/BTTV-/FFZ-Emotes geladen werden.
+     * Standard: NymN, xQc, LIRIK, MOONMOON, forsen – zusammen mehrere Tausend Community-Emotes.
+     */
+    twitchIds: list(process.env.EMOTE_TWITCH_IDS, '62300805,71092938,23161357,121059319,22484632'),
     cacheTtlMs: 60 * 60_000,
   },
 };

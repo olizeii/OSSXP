@@ -6,6 +6,9 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import { users, untisLinks } from '../db.js';
+import { RANKS, isAdmin, rankOf, requireRank } from '../roles.js';
+
+export { isAdmin };
 
 const { jwtSecret, cookieName, cookieSecure, tokenTtlSeconds } = config.auth;
 
@@ -59,22 +62,21 @@ export function requireUntis(req, res, next) {
   next();
 }
 
-/** Admins werden über ADMIN_USERNAMES in der .env festgelegt (z. B. für NewsXP). */
-export const isAdmin = (user) => Boolean(user) && config.adminUsernames.includes(user.username.toLowerCase());
-
-export function requireAdmin(req, res, next) {
-  if (!isAdmin(req.user)) return res.status(403).json({ error: 'Nur für Administratoren.' });
-  next();
-}
+/** Nur Admins (Rolle „admin“ oder ADMIN_USERNAMES). */
+export const requireAdmin = requireRank('admin');
 
 /** Öffentliche Sicht auf einen User – wird an den Client geschickt (nie password_hash!). */
 export function publicUser(user) {
   const link = untisLinks.findByUser(user.id);
+  const rank = rankOf(user);
   return {
     id: user.id,
     username: user.username,
     color: user.color,
-    isAdmin: isAdmin(user),
+    rank,
+    rankLabel: RANKS[rank].label,
+    isAdmin: rank === 'admin',
+    isModerator: RANKS[rank].order >= RANKS.moderator.order,
     avatar: user.avatar ?? null,
     createdAt: user.created_at,
     untisLinked: Boolean(link),

@@ -30,25 +30,48 @@ export interface BadgeDef {
   color: string;
 }
 
+export type ItemType = 'background' | 'frame' | 'avatar' | 'clippy-hat' | 'clippy-glasses';
+
 export interface ShopItem {
   id: string;
-  type: 'background' | 'frame';
+  type: ItemType;
   name: string;
   price: number;
+  /** Statisches CSS (Hintergrund/Rahmen) */
   style?: Record<string, string>;
+  /** Animierte CSS-Klasse (cosmetics.css) */
+  className?: string;
   asset?: string;
+  animated?: boolean;
+  /** Von Moderator:innen hochgeladen */
+  custom?: boolean;
+  image?: string;
+  creator?: string | null;
 }
+
+export type Showcase = 'badges' | 'info' | 'stats' | 'posts' | 'sudoku';
 
 export interface ProfileSettings {
   bio: string;
+  status: string;
+  theme: string;
+  infoTitle: string;
+  infoText: string;
   showcase: string[];
+  showcases: Showcase[];
+  featuredBadge: string | null;
   background: string;
   frame: string;
+  clippyHat: string;
+  clippyGlasses: string;
 }
 
 interface Catalog {
   badges: BadgeDef[];
   items: ShopItem[];
+  themes: string[];
+  showcases: Showcase[];
+  stammgastLevel: number;
 }
 
 interface EconomyUpdate {
@@ -58,6 +81,7 @@ interface EconomyUpdate {
   levelUp?: number | null;
   badges?: string[];
   label?: string;
+  lucky?: boolean;
 }
 
 interface EconomyState {
@@ -67,7 +91,7 @@ interface EconomyState {
   inventory: string[];
   profile: ProfileSettings | null;
 
-  loadCatalog: () => Promise<void>;
+  loadCatalog: (force?: boolean) => Promise<void>;
   load: () => Promise<void>;
   reset: () => void;
   applyUpdate: (u: EconomyUpdate) => void;
@@ -82,8 +106,8 @@ export const useEconomyStore = create<EconomyState>()((set, get) => ({
   inventory: [],
   profile: null,
 
-  async loadCatalog() {
-    if (get().catalog) return;
+  async loadCatalog(force = false) {
+    if (get().catalog && !force) return;
     set({ catalog: await api<Catalog>('/economy/catalog') });
   },
 
@@ -108,7 +132,11 @@ export const useEconomyStore = create<EconomyState>()((set, get) => ({
       notify({ title: 'Neues Abzeichen!', text: def ? `„${def.name}“ – ${def.description}` : id, icon: 'badge' });
     }
     if (!u.levelUp && !newBadges.length && (u.coins ?? 0) > 0) {
-      notify({ title: `+${u.coins} Coins`, text: `${u.label ?? 'Belohnung'}${u.xp ? ` · +${u.xp} XP` : ''}`, icon: 'coins' });
+      notify({
+        title: `+${u.coins} Coins${u.lucky ? ' – Glücksbonus!' : ''}`,
+        text: `${u.label ?? 'Belohnung'}${u.xp ? ` · +${u.xp} XP` : ''}`,
+        icon: 'coins',
+      });
     }
   },
 

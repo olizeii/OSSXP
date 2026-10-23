@@ -1,0 +1,129 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   Animierte Shop-Artikel (Profil-Hintergründe und -Rahmen)
+   Die Klassennamen stehen im Server-Katalog (className) – neue Animation = neue Klasse hier.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='cos-'], [class*='cos-']::before, [class*='cos-']::after { animation: none !important; }
+}
+
+/* ─── Hintergründe ─────────────────────────────────────────────────────── */
+
+.cos-bg-aurora {
+  background: linear-gradient(120deg, #031b34, #0b5e4a, #1fb57a, #6b3fd3, #0b5e4a, #031b34);
+  background-size: 400% 400%;
+  animation: cos-aurora 14s ease infinite;
+}
+
+@keyframes cos-aurora {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.cos-bg-stars {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #020617 0%, #1e1b4b 60%, #312e81 100%);
+}
+
+.cos-bg-stars::before,
+.cos-bg-stars::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, #fff 0 1px, transparent 1.6px),
+    radial-gradient(circle, #cfe3ff 0 1px, transparent 1.6px);
+  background-size: 97px 61px, 143px 89px;
+  background-position: 0 0, 40px 25px;
+  animation: cos-twinkle 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cos-bg-stars::after { background-size: 71px 113px, 191px 67px; animation-delay: 1.7s; }
+
+@keyframes cos-twinkle { 50% { opacity: 0.25; } }
+
+.cos-bg-matrix {
+  background:
+    repeating-linear-gradient(180deg, rgba(0, 255, 90, 0.35) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0 6px, transparent 6px 14px),
+    linear-gradient(180deg, #000, #032b12);
+  background-size: 100% 180px, 14px 100%, 100% 100%;
+  animation: cos-rain 2.5s linear infinite;
+}
+
+@keyframes cos-rain { to { background-position: 0 180px, 0 0, 0 0; } }
+
+.cos-bg-snow {
+  background:
+    radial-gradient(circle, #fff 0 1.5px, transparent 2px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.5px),
+    linear-gradient(180deg, #5d7fa8, #c9d9ea);
+  background-size: 60px 60px, 40px 40px, 100% 100%;
+  animation: cos-snow 6s linear infinite;
+}
+
+@keyframes cos-snow { to { background-position: 30px 60px, -20px 40px, 0 0; } }
+
+.cos-bg-waves {
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0.35) 0 20%, transparent 21%),
+    linear-gradient(180deg, #0c4a7d, #1e88c7 55%, #7fd0f5);
+  background-size: 120px 40px, 100% 100%;
+  animation: cos-waves 4s linear infinite;
+}
+
+@keyframes cos-waves { to { background-position: 120px 0, 0 0; } }
+
+.cos-bg-boot {
+  background:
+    linear-gradient(90deg, transparent 0 46%, #2838c7 46% 48%, transparent 48% 50%, #2838c7 50% 52%, transparent 52% 54%, #2838c7 54% 56%, transparent 56%) no-repeat,
+    radial-gradient(circle at 50% 40%, #1b2a6b, #000 70%);
+  background-size: 200% 8px, 100% 100%;
+  background-position: -100% 85%, 0 0;
+  animation: cos-boot 2.2s linear infinite;
+}
+
+@keyframes cos-boot { to { background-position: 100% 85%, 0 0; } }
+
+/* ─── Rahmen ───────────────────────────────────────────────────────────── */
+
+.cos-frame-spin { padding: 0; }
+
+.cos-frame-spin::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 8px;
+  background: conic-gradient(#e74c3c, #f1c40f, #2ecc71, #3498db, #9b59b6, #e74c3c);
+  animation: cos-spin 3s linear infinite;
+}
+
+.cos-frame-spin { isolation: isolate; box-shadow: 0 0 0 2px #fff; }
+
+@keyframes cos-spin { to { transform: rotate(360deg); } }
+
+.cos-frame-glow { animation: cos-glow 2s ease-in-out infinite; }
+
+@keyframes cos-glow {
+  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 4px 3px rgba(80, 160, 255, 0.6); }
+  50% { box-shadow: 0 0 0 2px #fff, 0 0 16px 8px rgba(80, 160, 255, 0.95); }
+}
+
+.cos-frame-fire { animation: cos-fire 0.9s ease-in-out infinite alternate; }
+
+@keyframes cos-fire {
+  0% { box-shadow: 0 0 0 2px #ffe08a, 0 0 0 5px #ff7b00, 0 -4px 10px 6px rgba(255, 90, 0, 0.7); }
+  100% { box-shadow: 0 0 0 2px #fff4c4, 0 0 0 6px #ff4500, 0 -8px 18px 8px rgba(255, 140, 0, 0.85); }
+}
+
+.cos-frame-ice {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 5px #9fe3ff, 0 0 12px 5px rgba(160, 230, 255, 0.8);
+  animation: cos-ice 3s ease-in-out infinite;
+}
+
+@keyframes cos-ice {
+  50% { box-shadow: 0 0 0 2px #fff, 0 0 0 5px #d7f6ff, 0 0 20px 8px rgba(200, 245, 255, 0.95); }
+}

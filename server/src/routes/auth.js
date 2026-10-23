@@ -5,9 +5,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { users } from '../db.js';
-import { award, onUserCreated } from '../economy/service.js';
-import { config } from '../config.js';
-import { zonedNow } from '../untis/time.js';
+import { awardDailyLogin, getItem, ownsItem, onUserCreated } from '../economy/service.js';
 import { clearAuthCookie, publicUser, requireAuth, setAuthCookie } from '../middleware/auth.js';
 
 export const authRouter = Router();
@@ -38,12 +36,16 @@ const authLimiter = rateLimit({
   message: { error: 'Zu viele Versuche. Bitte warten Sie einige Minuten.' },
 });
 
+/** Namen, die nach Personal/System aussehen, sind für normale Registrierungen gesperrt. */
+const RESERVED = /^(admin|administrator|moderator|mod|system|ossxp|clippy|support)$/i;
+
 function validateCredentials(body) {
   const username = String(body?.username ?? '').trim();
   const password = String(body?.password ?? '');
   if (!USERNAME_RE.test(username)) {
     return { error: 'Der Benutzername muss 3–20 Zeichen lang sein (Buchstaben, Ziffern, _).' };
   }
+  if (RESERVED.test(username)) return { error: 'Dieser Benutzername ist reserviert.' };
   if (password.length < 6 || password.length > 128) {
     return { error: 'Das Kennwort muss mindestens 6 Zeichen lang sein.' };
   }
@@ -90,7 +92,7 @@ authRouter.post('/logout', (_req, res) => {
 authRouter.get('/me', (req, res) => {
   if (req.user) {
     onUserCreated(req.user.id); // ältere Konten bekommen Wallet/Profil nachträglich
-    award(req.user.id, 'daily.login', zonedNow(config.untis.timezone).date);
+    awardDailyLogin(req.user.id);
   }
   res.json({ user: req.user ? publicUser(req.user) : null });
 });
@@ -103,7 +105,13 @@ authRouter.patch('/me', requireAuth, (req, res) => {
     users.setColor(req.user.id, color.toUpperCase());
   }
   if (avatar !== undefined) {
-    if (avatar !== null && !isValidAvatar(avatar)) {
+    // Gekaufte Shop-Avatare: "item:<id>" – nur wenn man den Artikel besitzt
+    const itemId = typeof avatar === 'string' && avatar.startsWith('item:') ? avatar.slice(5) : null;
+    if (itemId) {
+      if (getItem(itemId)?.type !== 'avatar' || !ownsItem(req.user.id, itemId)) {
+        return res.status(400).json({ error: 'Diesen Avatar besitzen Sie nicht.' });
+      }
+    } else if (avatar !== null && !isValidAvatar(avatar)) {
       return res.status(400).json({ error: 'Ungültiges Bild (PNG, JPEG oder WebP, max. 64 KB).' });
     }
     users.setAvatar(req.user.id, avatar);

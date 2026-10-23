@@ -69,6 +69,11 @@ export interface AppDefinition {
   requires?: AppRequirements;
   /** Nur ein Fenster gleichzeitig (Standard: true). Erneutes Öffnen fokussiert es. */
   singleInstance?: boolean;
+  /**
+   * Bei mehreren Fenstern: ein Fenster pro Schlüssel (z. B. ein Profilfenster pro User).
+   * Öffnen mit gleichem Schlüssel holt das vorhandene Fenster nach vorne.
+   */
+  instanceKey?: (params?: Record<string, unknown>) => string;
   placement?: AppPlacement;
 }
 

@@ -92,7 +92,7 @@ export function StartMenu() {
             {!user && <span className="sm-user-hint">Klicken Sie hier, um sich anzumelden</span>}
             {user && wallet && (
               <span className="sm-user-hint">
-                Level {wallet.level} · {wallet.coins} Coins
+                {user.rankLabel} · Level {wallet.level} · {wallet.coins} Coins
               </span>
             )}
           </span>

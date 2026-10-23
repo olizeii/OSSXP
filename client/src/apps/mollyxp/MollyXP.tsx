@@ -45,6 +45,7 @@ interface Upload {
   createdAt: number;
   author: { username: string; color: string } | null;
   mine: boolean;
+  canDelete: boolean;
 }
 
 interface MyClass {
@@ -340,10 +341,10 @@ function FileList({ items, onChanged, kind, className }: { items: Upload[] | nul
               <button className="ux-link" onClick={() => open(u)}>
                 Öffnen
               </button>
-              {u.mine && (
+              {u.canDelete && (
                 <>
                   {' · '}
-                  <button className="ux-link" onClick={() => remove(u)}>
+                  <button className="ux-link" style={{ color: '#b02a2a' }} onClick={() => remove(u)} title={u.mine ? 'Eigenen Upload löschen' : 'Als Moderation entfernen'}>
                     Löschen
                   </button>
                 </>
