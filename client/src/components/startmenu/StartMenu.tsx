@@ -17,7 +17,7 @@ import iconHelp from '../../assets/icons/help.svg';
 import iconGlobe from '../../assets/icons/globe.svg';
 import iconLink from '../../assets/icons/untis-link.svg';
 import { REPO_URL } from '../../core/constants';
-import { useEconomyStore } from '../../store/economyStore';
+import { formatCoins, useEconomyStore } from '../../store/economyStore';
 import { useClippyStore } from '../clippy/Clippy';
 
 /** Zusätzliche Einträge der rechten Spalte, die keine eigene App sind. */
@@ -92,7 +92,7 @@ export function StartMenu() {
             {!user && <span className="sm-user-hint">Klicken Sie hier, um sich anzumelden</span>}
             {user && wallet && (
               <span className="sm-user-hint">
-                {user.rankLabel} · Level {wallet.level} · {wallet.coins} Coins
+                {user.rankLabel} · Level {wallet.level} · {formatCoins(wallet)} Coins
               </span>
             )}
           </span>

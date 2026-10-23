@@ -32,6 +32,9 @@ export const REWARDS = {
 /** Ab diesem Level wird man automatisch „Stammgast“ (Rang + Abzeichen) */
 export const STAMMGAST_LEVEL = 8;
 
+/** Ab diesem Level dürfen Stammgäste eigene Shop-Artikel einreichen (Moderation prüft sie vor der Freigabe). */
+export const SHOP_UPLOAD_LEVEL = 15;
+
 /** Login-Serie: +2 Coins pro Tag in Folge, höchstens +20. */
 export const loginStreakBonus = (streak) => Math.min(20, Math.max(0, streak - 1) * 2);
 

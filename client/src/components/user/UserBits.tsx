@@ -7,7 +7,7 @@
  *  - FramedAvatar: Profilbild mit (auch animiertem) Rahmen
  *  - itemStyle/itemClass: CSS eines Shop-Artikels
  */
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import wallpaper from '../../assets/wallpaper.webp';
 import { avatarUrl } from '../../core/avatars';
 import { openProfile } from '../../core/profile';
@@ -127,8 +127,43 @@ export function LevelBadge({ level, size = 30 }: { level: number; size?: number 
 export function itemStyle(item: ShopItem | undefined): CSSProperties {
   if (!item) return {};
   if (item.asset === 'wallpaper') return { background: `url("${wallpaper}") center / cover`, imageRendering: 'pixelated' };
+  if (item.video) return { background: '#000' }; // das Video selbst liefert <BackgroundMedia>
   if (item.image && item.type === 'background') return { background: `url("${item.image}") center / cover` };
   return (item.style ?? {}) as CSSProperties;
+}
+
+/**
+ * Video-Hintergrund (wie animierte Steam-Hintergründe): füllt den umgebenden, relativ positionierten Container.
+ * `hover` = nur abspielen, solange die Maus darüber ist (Shop-Raster), sonst Endlosschleife.
+ */
+export function BackgroundMedia({ item, hover }: { item: ShopItem | undefined; hover?: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => {
+    const video = ref.current;
+    const host = video?.parentElement;
+    if (!video || !host || !hover) return;
+    const play = () => void video.play().catch(() => {});
+    const stop = () => (video.pause(), (video.currentTime = 0.1));
+    host.addEventListener('mouseenter', play);
+    host.addEventListener('mouseleave', stop);
+    return () => (host.removeEventListener('mouseenter', play), host.removeEventListener('mouseleave', stop));
+  }, [hover]);
+  if (!item?.video || !item.image) return null;
+  return (
+    <video
+      ref={ref}
+      className="usr-bg-video"
+      // #t=0.1 zeigt ein Standbild, solange nicht abgespielt wird
+      src={`${item.image}#t=0.1`}
+      autoPlay={!hover && !reduced}
+      muted
+      loop
+      playsInline
+      preload={hover ? 'metadata' : 'auto'}
+      aria-hidden
+    />
+  );
 }
 
 /** Klasse für animierte Artikel (siehe styles/cosmetics.css). */

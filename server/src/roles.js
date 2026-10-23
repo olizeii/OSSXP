@@ -12,7 +12,7 @@
  */
 import { config } from './config.js';
 import { untisLinks } from './db.js';
-import { STAMMGAST_LEVEL } from './economy/catalog.js';
+import { SHOP_UPLOAD_LEVEL, STAMMGAST_LEVEL } from './economy/catalog.js';
 import { getWallet } from './economy/service.js';
 
 export { STAMMGAST_LEVEL };
@@ -32,7 +32,7 @@ export const PERMISSIONS = {
   addEmote: 'verified', // 7TV-Emotes für alle hinzufügen
   createChannel: 'moderator',
   moderate: 'moderator', // löschen, Timeouts, Emotes entfernen
-  uploadShopItem: 'moderator',
+  uploadShopItem: 'regular', // Stammgäste zusätzlich erst ab SHOP_UPLOAD_LEVEL, siehe canUploadShopItem()
   publishNews: 'admin',
   appointModerators: 'admin',
 };
@@ -53,6 +53,9 @@ export function rankOf(user) {
 
 export const hasRank = (user, min) => Boolean(user) && RANKS[rankOf(user)].order >= RANKS[min].order;
 export const can = (user, permission) => hasRank(user, PERMISSIONS[permission]);
+
+/** Shop-Uploads: Moderation und Admins immer, Stammgäste ab einem hohen Level (mit Freigabe durch die Moderation). */
+export const canUploadShopItem = (user) => hasRank(user, 'moderator') || (hasRank(user, 'regular') && getWallet(user.id).level >= SHOP_UPLOAD_LEVEL);
 
 /** Express-Middleware: mindestens Rang `min` (oder eine Berechtigung aus PERMISSIONS). */
 export function requireRank(minOrPermission) {

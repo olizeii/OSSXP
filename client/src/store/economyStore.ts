@@ -20,7 +20,12 @@ export interface Wallet {
   xp: number;
   levelXp: number;
   levelSpan: number;
+  /** Admins: unbegrenzt Coins, Käufe kosten nichts */
+  unlimited?: boolean;
 }
+
+/** Guthaben zur Anzeige – „∞“ für Admins. */
+export const formatCoins = (wallet: Wallet | null | undefined) => (wallet?.unlimited ? '∞' : (wallet?.coins ?? 0).toLocaleString('de-DE'));
 
 export interface BadgeDef {
   id: string;
@@ -46,6 +51,10 @@ export interface ShopItem {
   /** Von Moderator:innen hochgeladen */
   custom?: boolean;
   image?: string;
+  /** Hochgeladener Video-Hintergrund (WebM/MP4) */
+  video?: boolean;
+  /** Eingereicht, wartet auf Freigabe durch die Moderation */
+  pending?: boolean;
   creator?: string | null;
 }
 
@@ -72,6 +81,8 @@ interface Catalog {
   themes: string[];
   showcases: Showcase[];
   stammgastLevel: number;
+  /** Ab diesem Level dürfen Stammgäste eigene Artikel einreichen */
+  shopUploadLevel: number;
 }
 
 interface EconomyUpdate {

@@ -66,7 +66,11 @@ sudokuRouter.get('/daily', (req, res) => {
     stmt.insertStart.run(req.user.id, date, startedAt);
     startedAt = stmt.start.get(req.user.id, date).started_at;
     const result = stmt.resultOf.get(date, req.user.id);
-    if (result) solved = { seconds: result.seconds, rank: stmt.rank.get(date, result.seconds, result.seconds, result.id).rank };
+    if (result) {
+      solved = { seconds: result.seconds, rank: stmt.rank.get(date, result.seconds, result.seconds, result.id).rank };
+      // Belohnung nachbuchen, falls sie beim Lösen fehlgeschlagen ist (Ledger verhindert Doppelbuchung)
+      award(req.user.id, 'sudoku.daily', date);
+    }
   }
 
   const token = jwt.sign({ d: date, s: startedAt, n: crypto.randomUUID() }, config.auth.jwtSecret, { expiresIn: '2d' });

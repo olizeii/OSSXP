@@ -205,3 +205,14 @@
 .pf-item-preview { position: relative; width: 80px; height: 44px; overflow: hidden; border: 1px solid #888; border-radius: 2px; }
 .pf-item-avatar { width: 40px; height: 40px; object-fit: cover; border-radius: 3px; border: 1px solid #aaa; }
 .pf-clippy { display: flex; align-items: center; gap: 14px; }
+
+/* Gutschrift-Dialog (Admins) */
+.pf-grant { width: min(380px, calc(100% - 20px)); color: #000; }
+.pf-grant .pf-grant-body { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+.pf-grant .pf-muted { color: #555; }
+.pf-grant-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.pf-grant-presets .xp-button { min-width: 0; padding: 0 8px; }
+
+/* Video-Hintergrund hinter dem Kopfbereich */
+.pf-hero { position: relative; overflow: hidden; }
+.pf-hero > .pf-hero-panel { position: relative; z-index: 1; }

@@ -1,7 +1,8 @@
 /**
  * Punkteshop (an den Steam-Punkteshop angelehnt):
  *   Hintergründe · Rahmen · Avatare (statisch & animiert) · Clippy-Erweiterungen · Workshop
- * Ab Rang „Moderator“ können eigene Artikel hochgeladen werden – Ersteller:innen bekommen 50 % jedes Verkaufs.
+ * Eigene Artikel (auch echte Animationen: GIF/WebP/APNG, Hintergründe als WebM/MP4-Video) laden Moderation und Admins
+ * direkt hoch; Stammgäste ab Level 15 reichen sie ein, die Moderation gibt sie frei. Ersteller:innen bekommen 50 % jedes Verkaufs.
  * Coins/Inventar kommen aus dem globalen economyStore, Käufe gehen an POST /api/economy/shop/buy.
  */
 import { useEffect, useState, type FormEvent } from 'react';
@@ -10,14 +11,14 @@ import { avatarUrl } from '../../core/avatars';
 import { launchApp } from '../../core/launcher';
 import type { AppWindowProps } from '../../core/types';
 import { ClippyPreview } from '../../components/clippy/Clippy';
-import { CoinIcon, FramedAvatar, LevelBadge, itemClass, itemStyle } from '../../components/user/UserBits';
-import { useAuthStore, type User } from '../../store/authStore';
-import { useEconomyStore, type ItemType, type ShopItem } from '../../store/economyStore';
+import { BackgroundMedia, CoinIcon, FramedAvatar, LevelBadge, itemClass, itemStyle } from '../../components/user/UserBits';
+import { hasRank, useAuthStore, type User } from '../../store/authStore';
+import { formatCoins, useEconomyStore, type ItemType, type ShopItem } from '../../store/economyStore';
 import { useUiStore } from '../../store/uiStore';
 import '../account/account.css';
 import './shop.css';
 
-type Category = 'background' | 'frame' | 'avatar' | 'clippy' | 'workshop' | 'submit' | 'earn';
+type Category = 'background' | 'frame' | 'avatar' | 'clippy' | 'workshop' | 'submit' | 'review' | 'earn';
 
 interface Reward {
   xp: number;
@@ -64,17 +65,22 @@ export default function Shop({ params }: AppWindowProps) {
   }, [loadCatalog]);
 
   const all = catalog?.items ?? [];
-  const items =
-    category === 'workshop'
-      ? all.filter((i) => i.custom)
-      : all.filter((i) => TYPES_OF[category]?.includes(i.type) && !i.custom && (!animatedOnly || i.animated));
+  // Community-Artikel erscheinen zusätzlich in ihrer Kategorie – der Workshop zeigt nur sie
+  const items = all.filter(
+    (i) => (category === 'workshop' ? i.custom : TYPES_OF[category]?.includes(i.type)) && (!animatedOnly || i.animated),
+  );
+  const isMod = hasRank(user, 'moderator');
+  const uploadLevel = catalog?.shopUploadLevel ?? 15;
+  const canUpload = isMod || (hasRank(user, 'regular') && (wallet?.level ?? 0) >= uploadLevel);
 
   function confirmBuy(item: ShopItem) {
     if (!user) return ui.openLogin();
     ui.showMessage({
       title: 'Kauf bestätigen',
       icon: 'question',
-      text: `„${item.name}“ für ${item.price} Coins kaufen?\nIhr Guthaben danach: ${(wallet?.coins ?? 0) - item.price} Coins.`,
+      text: wallet?.unlimited
+        ? `„${item.name}“ kaufen? Als Admin kostet es Sie nichts.`
+        : `„${item.name}“ für ${item.price} Coins kaufen?\nIhr Guthaben danach: ${(wallet?.coins ?? 0) - item.price} Coins.`,
       buttons: [
         {
           label: 'Kaufen',
@@ -121,7 +127,7 @@ export default function Shop({ params }: AppWindowProps) {
             {wallet ? (
               <>
                 <div className="shop-coins">
-                  <CoinIcon size={22} /> {wallet.coins.toLocaleString('de-DE')}
+                  <CoinIcon size={22} /> {formatCoins(wallet)}
                 </div>
                 <div className="shop-level">
                   <LevelBadge level={wallet.level} size={24} /> {wallet.levelXp}/{wallet.levelSpan} XP
@@ -142,9 +148,14 @@ export default function Shop({ params }: AppWindowProps) {
                 {label}
               </button>
             ))}
-            {user?.isModerator && (
+            {canUpload && (
               <button className={`cp-task ${category === 'submit' ? 'active' : ''}`} onClick={() => setCategory('submit')}>
-                + Eigenen Artikel einreichen
+                + Eigenen Artikel {isMod ? 'hochladen' : 'einreichen'}
+              </button>
+            )}
+            {isMod && (
+              <button className={`cp-task ${category === 'review' ? 'active' : ''}`} onClick={() => setCategory('review')}>
+                Einreichungen prüfen
               </button>
             )}
           </div>
@@ -165,33 +176,38 @@ export default function Shop({ params }: AppWindowProps) {
         {category === 'earn' ? (
           <EarnInfo rewards={rewards} />
         ) : category === 'submit' ? (
-          <SubmitItem onDone={() => (loadCatalog(true), setCategory('workshop'))} />
+          <SubmitItem direct={isMod} onDone={(live) => (loadCatalog(true), live && setCategory('workshop'))} />
+        ) : category === 'review' ? (
+          <ReviewQueue avatar={user?.avatar} onChanged={() => loadCatalog(true)} />
         ) : (
           <>
             <div className="shop-head">
               <h1 className="cp-heading">{CATEGORIES.find(([c]) => c === category)?.[1]}</h1>
-              {category !== 'workshop' && category !== 'clippy' && (
+              {category !== 'clippy' && (
                 <label className="shop-filter">
                   <input type="checkbox" checked={animatedOnly} onChange={(e) => setAnimatedOnly(e.target.checked)} /> Nur animierte
                 </label>
               )}
             </div>
             {category === 'workshop' && (
-              <p className="cp-hint">Von Moderator:innen gestaltete Artikel. Die Ersteller:innen bekommen die Hälfte jedes Kaufpreises.</p>
+              <p className="cp-hint">
+                Von der Community gestaltete Artikel – mit echten Animationen und Video-Hintergründen. Die Ersteller:innen bekommen die
+                Hälfte jedes Kaufpreises. {canUpload ? '' : `Eigene Artikel: ab Moderator oder als Stammgast ab Level ${uploadLevel}.`}
+              </p>
             )}
             {items.length === 0 ? (
               <p className="ux-muted">Hier gibt es (noch) nichts.</p>
             ) : (
-              <div className="shop-grid">
+              <div className={`shop-grid ${category === 'background' || category === 'workshop' ? 'wide' : ''}`}>
                 {items.map((item) => {
                   const owned = inventory.includes(item.id);
                   const equipped = isEquipped(item);
-                  const affordable = (wallet?.coins ?? 0) >= item.price;
+                  const affordable = Boolean(wallet?.unlimited) || (wallet?.coins ?? 0) >= item.price;
                   return (
                     <div key={item.id} className={`shop-card ${equipped ? 'equipped' : ''}`}>
                       <ItemPreview item={item} avatar={user?.avatar} />
                       <b>
-                        {item.name} {item.animated && <span className="shop-anim">animiert</span>}
+                        {item.name} {item.video ? <span className="shop-anim">Video</span> : item.animated && <span className="shop-anim">animiert</span>}
                       </b>
                       {item.creator && <span className="ux-muted">von {item.creator}</span>}
                       <span className="shop-price">
@@ -216,7 +232,7 @@ export default function Shop({ params }: AppWindowProps) {
                           {user && !affordable ? 'Zu wenig Coins' : 'Kaufen'}
                         </button>
                       )}
-                      {item.custom && user?.isModerator && (
+                      {item.custom && isMod && (
                         <button
                           className="ux-link"
                           onClick={() => api(`/economy/items/${item.id}`, { method: 'DELETE' }).then(() => loadCatalog(true))}
@@ -240,7 +256,11 @@ export default function Shop({ params }: AppWindowProps) {
 function ItemPreview({ item, avatar }: { item: ShopItem; avatar?: string | null }) {
   switch (item.type) {
     case 'background':
-      return <div className={`shop-preview ${itemClass(item)}`} style={itemStyle(item)} />;
+      return (
+        <div className={`shop-preview ${item.video ? 'video' : ''} ${itemClass(item)}`} style={itemStyle(item)} title={item.video ? 'Maus darüber = abspielen' : undefined}>
+          <BackgroundMedia item={item} hover />
+        </div>
+      );
     case 'frame':
       return (
         <div className="shop-preview frame-bg">
@@ -305,17 +325,35 @@ function EarnInfo({ rewards }: { rewards: Record<string, Reward> }) {
   );
 }
 
-function SubmitItem({ onDone }: { onDone: () => void }) {
-  const [type, setType] = useState<'avatar' | 'background' | 'frame'>('avatar');
+const FORMATS = {
+  avatar: { accept: 'image/png,image/jpeg,image/webp,image/gif', hint: 'PNG, JPG, WebP oder GIF (animiert erlaubt), quadratisch, max. 6 MB' },
+  frame: { accept: 'image/png,image/webp,image/gif', hint: 'quadratisches PNG/WebP/GIF mit transparenter Mitte – wird über das Profilbild gelegt, max. 6 MB' },
+  background: { accept: 'image/png,image/jpeg,image/webp,image/gif,video/webm,video/mp4', hint: 'Bild (PNG, JPG, WebP, GIF, max. 6 MB) oder Video wie bei Steam (WebM/MP4, max. 20 MB, ohne Ton), am besten 16:9' },
+} as const;
+
+function SubmitItem({ direct, onDone }: { direct: boolean; onDone: (live: boolean) => void }) {
+  const [type, setType] = useState<'avatar' | 'background' | 'frame'>('background');
   const [name, setName] = useState('');
-  const [price, setPrice] = useState(150);
+  const [price, setPrice] = useState(500);
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [mine, setMine] = useState<ShopItem[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const loadMine = () => api<{ items: ShopItem[] }>('/economy/items/pending').then((r) => setMine(r.items), () => {});
+  useEffect(() => void (!direct && loadMine()), [direct]);
+
+  useEffect(() => {
+    if (!file) return setPreview(null);
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!file) return setError('Bitte eine Bilddatei auswählen.');
+    if (!file) return setError('Bitte eine Datei auswählen.');
     setBusy(true);
     setError('');
     const form = new FormData();
@@ -324,9 +362,16 @@ function SubmitItem({ onDone }: { onDone: () => void }) {
     form.set('name', name);
     form.set('price', String(price));
     try {
-      await api('/economy/items', { method: 'POST', body: form });
-      useUiStore.getState().showMessage({ title: 'Punkteshop', icon: 'info', text: `„${name}“ ist jetzt im Workshop kaufbar.` });
-      onDone();
+      const r = await api<{ pending: boolean }>('/economy/items', { method: 'POST', body: form });
+      useUiStore.getState().showMessage({
+        title: 'Punkteshop',
+        icon: 'info',
+        text: r.pending ? `„${name}“ wurde eingereicht. Sobald die Moderation es freigibt, ist es im Workshop kaufbar.` : `„${name}“ ist jetzt im Workshop kaufbar.`,
+      });
+      setName('');
+      setFile(null);
+      if (r.pending) loadMine();
+      onDone(!r.pending);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -334,39 +379,134 @@ function SubmitItem({ onDone }: { onDone: () => void }) {
     }
   }
 
+  const isVideo = file?.type.startsWith('video/');
+
   return (
     <form onSubmit={submit} className="shop-submit">
-      <h1 className="cp-heading">Eigenen Artikel einreichen</h1>
+      <h1 className="cp-heading">Eigenen Artikel {direct ? 'hochladen' : 'einreichen'}</h1>
       <p className="cp-hint">
-        Nur für Moderator:innen. Erlaubt: PNG, WebP, JPG oder animiertes GIF (max. 4 MB). Rahmen bitte als quadratisches PNG mit
-        transparenter Mitte – er wird über das Profilbild gelegt.
+        Lade echte Animationen hoch – animierte Avatare, Rahmen und Hintergründe wie im Steam-Punkteshop. Nur eigene Werke oder
+        Material, das du verwenden darfst; nichts Anstößiges.{' '}
+        {direct ? 'Als Moderator:in ist dein Artikel sofort kaufbar.' : 'Die Moderation prüft deine Einreichung vor der Freigabe.'}
       </p>
       <fieldset className="xp-fieldset">
         <legend>Typ</legend>
-        {(['avatar', 'background', 'frame'] as const).map((t) => (
+        {(['background', 'avatar', 'frame'] as const).map((t) => (
           <label key={t} className="shop-radio">
-            <input type="radio" checked={type === t} onChange={() => setType(t)} /> {t === 'avatar' ? 'Avatar' : t === 'background' ? 'Hintergrund' : 'Rahmen'}
+            <input type="radio" checked={type === t} onChange={() => (setType(t), setFile(null))} /> {t === 'avatar' ? 'Avatar' : t === 'background' ? 'Profil-Hintergrund' : 'Avatar-Rahmen'}
           </label>
         ))}
       </fieldset>
-      <label className="xp-field">
-        <span>Name:</span>
-        <input className="xp-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required />
-      </label>
-      <label className="xp-field">
-        <span>Preis (Coins):</span>
-        <input className="xp-input" type="number" min={10} max={5000} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
-      </label>
-      <label className="xp-field">
-        <span>Bild:</span>
-        <input type="file" accept="image/png,image/webp,image/gif,image/jpeg" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
-      </label>
+      <div className="shop-submit-grid">
+        <div className="shop-submit-fields">
+          <label className="xp-field">
+            <span>Name:</span>
+            <input className="xp-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required />
+          </label>
+          <label className="xp-field">
+            <span>Preis (Coins):</span>
+            <input className="xp-input" type="number" min={10} max={5000} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+          </label>
+          <label className="xp-field">
+            <span>Datei:</span>
+            <input key={type} type="file" accept={FORMATS[type].accept} onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
+          </label>
+          <span className="ux-muted">{FORMATS[type].hint}</span>
+        </div>
+        <div className={`shop-submit-preview ${type}`}>
+          {!preview ? (
+            <span>Vorschau</span>
+          ) : isVideo ? (
+            <video src={preview} autoPlay muted loop playsInline />
+          ) : (
+            <img src={preview} alt="Vorschau" />
+          )}
+        </div>
+      </div>
       {error && <p className="xp-error-text">{error}</p>}
       <div className="dialog-buttons" style={{ justifyContent: 'flex-end' }}>
         <button className="xp-button default" disabled={busy}>
-          {busy ? 'Wird hochgeladen…' : 'Einreichen'}
+          {busy ? 'Wird hochgeladen…' : direct ? 'Hochladen' : 'Einreichen'}
         </button>
       </div>
+
+      {mine.length > 0 && (
+        <fieldset className="xp-fieldset">
+          <legend>Warten auf Freigabe</legend>
+          <ul className="shop-mine">
+            {mine.map((i) => (
+              <li key={i.id}>
+                {i.name} <span className="ux-muted">({i.type === 'background' ? 'Hintergrund' : i.type === 'frame' ? 'Rahmen' : 'Avatar'}, {i.price} Coins)</span>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      )}
     </form>
+  );
+}
+
+/** Moderation: eingereichte Artikel von Stammgästen freigeben oder ablehnen. */
+function ReviewQueue({ avatar, onChanged }: { avatar?: string | null; onChanged: () => void }) {
+  const [items, setItems] = useState<ShopItem[] | null>(null);
+  const load = () => api<{ items: ShopItem[] }>('/economy/items/pending').then((r) => setItems(r.items), () => setItems([]));
+  useEffect(() => void load(), []);
+
+  async function decide(item: ShopItem, approve: boolean) {
+    try {
+      await api(`/economy/items/${item.id}${approve ? '/approve' : ''}`, { method: approve ? 'POST' : 'DELETE' });
+      load();
+      onChanged();
+    } catch (e) {
+      useUiStore.getState().showMessage({ title: 'Punkteshop', icon: 'error', text: (e as Error).message });
+    }
+  }
+
+  return (
+    <>
+      <h1 className="cp-heading">Einreichungen prüfen</h1>
+      <p className="cp-hint">Freigegebene Artikel sind sofort im Workshop kaufbar. Abgelehnte Dateien werden gelöscht; die Ersteller:innen werden benachrichtigt.</p>
+      {!items ? (
+        <p className="ux-muted">Wird geladen…</p>
+      ) : items.length === 0 ? (
+        <p className="ux-muted">Keine offenen Einreichungen.</p>
+      ) : (
+        <div className="shop-grid wide">
+          {items.map((item) => (
+            <div key={item.id} className="shop-card">
+              {/* Wartende Artikel stehen noch nicht im Katalog – Vorschau direkt aus dem Datensatz */}
+              {item.type === 'avatar' ? (
+                <div className="shop-preview avatar-bg">
+                  <img src={item.image} alt="" />
+                </div>
+              ) : item.type === 'frame' ? (
+                <div className="shop-preview frame-bg">
+                  <span className="usr-frame" style={{ width: 46, height: 46 }}>
+                    <img className="usr-avatar" src={avatarUrl(avatar)} alt="" width={46} height={46} />
+                    <img className="usr-frame-overlay" src={item.image} alt="" />
+                  </span>
+                </div>
+              ) : (
+                <ItemPreview item={item} />
+              )}
+              <b>
+                {item.name} {item.video ? <span className="shop-anim">Video</span> : item.animated && <span className="shop-anim">animiert</span>}
+              </b>
+              <span className="ux-muted">
+                von {item.creator ?? 'Unbekannt'} · {item.price} Coins
+              </span>
+              <div className="shop-review-actions">
+                <button className="xp-button default" onClick={() => decide(item, true)}>
+                  Freigeben
+                </button>
+                <button className="xp-button" onClick={() => decide(item, false)}>
+                  Ablehnen
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

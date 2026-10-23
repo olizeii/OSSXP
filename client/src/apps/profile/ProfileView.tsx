@@ -7,9 +7,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../core/api';
 import { launchApp } from '../../core/launcher';
-import { BadgeIcon, CoinIcon, FramedAvatar, LevelBadge, RankIcon, itemClass, itemStyle, useItem } from '../../components/user/UserBits';
+import { BackgroundMedia, BadgeIcon, CoinIcon, FramedAvatar, LevelBadge, RankIcon, itemClass, itemStyle, useItem } from '../../components/user/UserBits';
 import { useAuthStore, type Rank } from '../../store/authStore';
-import { useEconomyStore, type Showcase } from '../../store/economyStore';
+import { formatCoins, useEconomyStore, type Showcase } from '../../store/economyStore';
+import { GrantDialog } from './GrantDialog';
 import { useUiStore } from '../../store/uiStore';
 import { ProfileEditor } from './ProfileEditor';
 import './profile.css';
@@ -67,6 +68,7 @@ export function ProfileView({ username }: { username: string }) {
   const me = useAuthStore((s) => s.user);
   const wallet = useEconomyStore((s) => s.wallet);
   const [editing, setEditing] = useState(false);
+  const [granting, setGranting] = useState(false);
   const isMe = Boolean(me && profile && me.id === profile.user.id);
 
   // Eigenes Profil: bei Level-/Abzeichen-Änderungen (Live-Update) neu laden
@@ -97,6 +99,7 @@ export function ProfileView({ username }: { username: string }) {
     <div className="pf xp-scroll" data-theme={profile.theme}>
       {/* ── Kopf ── */}
       <header className={`pf-hero ${itemClass(background)}`} style={itemStyle(background)}>
+        <BackgroundMedia item={background} />
         <div className="pf-hero-panel">
           <FramedAvatar avatar={user.avatar} frame={profile.frame} size={96} />
           <div className="pf-hero-main">
@@ -131,7 +134,7 @@ export function ProfileView({ username }: { username: string }) {
                     Profil bearbeiten
                   </button>
                   <button className="xp-button" onClick={() => launchApp('shop')}>
-                    <CoinIcon /> {wallet?.coins ?? 0} – Shop
+                    <CoinIcon /> {formatCoins(wallet)} – Shop
                   </button>
                 </>
               ) : (
@@ -140,6 +143,11 @@ export function ProfileView({ username }: { username: string }) {
                     Nachricht senden
                   </button>
                 )
+              )}
+              {me?.isAdmin && (
+                <button className="xp-button" onClick={() => setGranting(true)} title="Coins und XP gutschreiben (nur Admins)">
+                  Coins/XP gutschreiben…
+                </button>
               )}
               {me?.isAdmin && !isMe && !user.isAdmin && (
                 <button className="xp-button" onClick={() => setModerator(!user.isModerator)}>
@@ -178,6 +186,8 @@ export function ProfileView({ username }: { username: string }) {
           {isMe && <AllBadges earned={profile.badges.map((b) => b.id)} />}
         </aside>
       </div>
+
+      {granting && <GrantDialog username={user.username} onClose={() => setGranting(false)} onDone={() => (setGranting(false), reload())} />}
 
       {editing && (
         <ProfileEditor

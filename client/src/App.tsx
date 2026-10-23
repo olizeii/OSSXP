@@ -45,6 +45,15 @@ export default function App() {
       useUiStore.getState().notify({ title: `Nachricht von ${m.from}`, text: m.text.length > 80 ? `${m.text.slice(0, 80)}…` : m.text, icon: 'info' });
     });
 
+    // Shop-Einreichung geprüft → Ersteller:in benachrichtigen
+    socket.on('shop:review', (r: { name: string; approved: boolean }) =>
+      useUiStore.getState().notify({
+        title: r.approved ? 'Artikel freigegeben' : 'Einreichung abgelehnt',
+        text: r.approved ? `„${r.name}“ ist jetzt im Workshop kaufbar.` : `„${r.name}“ wurde von der Moderation abgelehnt.`,
+        icon: 'info',
+      }),
+    );
+
     // Deep-Links: ?app=redxp&sub=3ahit öffnet die App mit diesen Parametern (z. B. private Subreddits teilen)
     const query = new URLSearchParams(location.search);
     const deepApp = query.get('app');

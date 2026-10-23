@@ -132,13 +132,24 @@ Danach läuft alles unter http://localhost:3001. Hinter HTTPS zusätzlich `COOKI
 Bitte danach das Passwort ändern bzw. in Produktion `SEED_ADMIN_PASSWORD` (und optional `SEED_ADMIN_USERNAME`) setzen –
 ohne diese Variable wird dort kein Admin angelegt.
 
+**Eigenes Konto zum Admin machen** (läuft auf derselben Datenbank, der Server darf dabei laufen):
+
+```bash
+npm run set-role -- Olizei admin
+```
+
+Danach die Seite neu laden. Zurücknehmen mit `npm run set-role -- Olizei user`. Alternativ den Namen dauerhaft in
+`ADMIN_USERNAMES` in `server/.env` eintragen (kommagetrennt) und den Server neu starten.
+Admins haben unbegrenzt Coins (∞, Käufe kosten nichts) und können sich und anderen im Profil über
+**„Coins/XP gutschreiben…“** beliebig XP und Coins geben.
+
 ## Ränge
 
 | Rang | Wie | Darf zusätzlich |
 | --- | --- | --- |
 | ♦ **Admin** | Seed-Konto oder `ADMIN_USERNAMES` | NewsXP verwalten, Moderator:innen ernennen (im Profil) |
-| ⚔ **Moderator** | vom Admin ernannt | Chat-Channels anlegen, Timeouts, fremde Inhalte löschen, Workshop-Artikel in den Shop hochladen |
-| ♛ **Stammgast** | automatisch ab Level 8 (+ Abzeichen) | eigene Subreddits gründen (privat bis 10 Mitglieder) |
+| ⚔ **Moderator** | vom Admin ernannt | Chat-Channels anlegen, Timeouts, fremde Inhalte löschen, Shop-Artikel hochladen und Einreichungen freigeben |
+| ♛ **Stammgast** | automatisch ab Level 8 (+ Abzeichen) | eigene Subreddits gründen (privat bis 10 Mitglieder); ab Level 15 Shop-Artikel einreichen |
 | ✓ **Verifiziert** | Untis verknüpft | Links posten, 7TV-Emotes hinzufügen |
 | **Neu** | frisch registriert | lesen, schreiben, abstimmen – ohne Links, mit Slow-Mode im Chat |
 
@@ -155,6 +166,7 @@ Wiederholung kleiner – Spammen bringt nichts (und im Chat gibt es automatische
 | Profil ansehen | Desktop-Icon **Profil** (eigenes Profil) oder auf einen Namen klicken (Chat, redXP, Bestenliste, MollyXP) |
 | Profil gestalten | Im eigenen Profil → „Profil bearbeiten“: Theme, Status, Vitrinen (Reihenfolge), Info-Box, Lieblingsabzeichen, Avatar, Clippy-Outfit |
 | Coins ausgeben | Punkteshop (oder Klick auf die Coins unten rechts in der Taskleiste) – inkl. animierter Hintergründe, Rahmen und Avatare |
+| Eigene Artikel | Punkteshop → „Eigenen Artikel hochladen/einreichen“: animierte GIF/WebP/APNG-Avatare und -Rahmen, Hintergründe auch als WebM/MP4-Video |
 | Privatnachricht | Im Profil „Nachricht senden“ oder im Chat `/w name text` bzw. „+“ → „Neue Unterhaltung“ |
 | Clippy ein/aus | Rechtsklick auf Clippy oder Startmenü → „Clippy ein-/ausblenden“; Hüte & Brillen gibt es im Shop |
 | Profilbild ändern | Startmenü → auf das eigene Bild klicken → „Eigenes Bild ändern“ (Galerie oder eigenes Bild hochladen) |

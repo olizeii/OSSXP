@@ -31,6 +31,7 @@ import {
   levelUpCoins,
   loginStreakBonus,
   xpToNext,
+  SHOP_UPLOAD_LEVEL,
 } from './catalog.js';
 
 db.exec(`
@@ -89,6 +90,11 @@ db.exec(`
   );
 `);
 
+// Shop-Uploads: animiert? wartet auf Freigabe?
+const customColumns = new Set(db.prepare('PRAGMA table_info(shop_custom_items)').all().map((c) => c.name));
+if (!customColumns.has('animated')) db.exec('ALTER TABLE shop_custom_items ADD COLUMN animated INTEGER NOT NULL DEFAULT 0');
+if (!customColumns.has('pending')) db.exec('ALTER TABLE shop_custom_items ADD COLUMN pending INTEGER NOT NULL DEFAULT 0');
+
 // Neue Profil-Spalten für bestehende Datenbanken
 const profileColumns = new Set(db.prepare('PRAGMA table_info(profiles)').all().map((c) => c.name));
 for (const [col, def] of [
@@ -117,6 +123,9 @@ const stmt = {
   actionDays: db.prepare('SELECT DISTINCT day FROM ledger WHERE user_id = ? AND action = ? ORDER BY day DESC LIMIT 400'),
   refsOf: db.prepare('SELECT ref FROM ledger WHERE user_id = ? AND action = ?'),
   insertLedger: db.prepare('INSERT INTO ledger (user_id, action, ref, day, coins, xp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  /** Level-Bonus nur einmal je Level – auch wenn sich die Level-Kurve ändert und man ein Level erneut erreicht. */
+  userRole: db.prepare('SELECT username, role FROM users WHERE id = ?'),
+  insertLedgerOnce: db.prepare('INSERT OR IGNORE INTO ledger (user_id, action, ref, day, coins, xp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
   badges: db.prepare('SELECT badge_id, earned_at FROM user_badges WHERE user_id = ? ORDER BY earned_at'),
   insertBadge: db.prepare('INSERT OR IGNORE INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?)'),
   inventory: db.prepare('SELECT item_id FROM inventory WHERE user_id = ?'),
@@ -128,9 +137,12 @@ const stmt = {
       theme = @theme, status = @status, info_title = @infoTitle, info_text = @infoText, showcases = @showcases,
       featured_badge = @featuredBadge, clippy_hat = @clippyHat, clippy_glasses = @clippyGlasses, updated_at = @now
     WHERE user_id = @userId`),
-  customItems: db.prepare('SELECT c.*, u.username AS creator FROM shop_custom_items c LEFT JOIN users u ON u.id = c.creator_id WHERE c.active = 1 ORDER BY c.id DESC'),
+  customItems: db.prepare('SELECT c.*, u.username AS creator FROM shop_custom_items c LEFT JOIN users u ON u.id = c.creator_id WHERE c.active = 1 AND c.pending = 0 ORDER BY c.id DESC'),
+  pendingItems: db.prepare('SELECT c.*, u.username AS creator FROM shop_custom_items c LEFT JOIN users u ON u.id = c.creator_id WHERE c.active = 1 AND c.pending = 1 ORDER BY c.id'),
+  ownPending: db.prepare('SELECT c.*, u.username AS creator FROM shop_custom_items c LEFT JOIN users u ON u.id = c.creator_id WHERE c.active = 1 AND c.pending = 1 AND c.creator_id = ? ORDER BY c.id DESC'),
+  approveCustom: db.prepare('UPDATE shop_custom_items SET pending = 0 WHERE id = ?'),
   customItem: db.prepare('SELECT c.*, u.username AS creator FROM shop_custom_items c LEFT JOIN users u ON u.id = c.creator_id WHERE c.id = ?'),
-  insertCustom: db.prepare('INSERT INTO shop_custom_items (type, name, price, file_path, mime, creator_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  insertCustom: db.prepare('INSERT INTO shop_custom_items (type, name, price, file_path, mime, animated, pending, creator_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   deactivateCustom: db.prepare('UPDATE shop_custom_items SET active = 0 WHERE id = ?'),
 };
 
@@ -144,34 +156,46 @@ const toCustomItem = (row) => ({
   name: row.name,
   price: row.price,
   image: `/api/economy/items/c-${row.id}/image`,
-  animated: row.mime === 'image/gif',
+  video: row.mime.startsWith('video/'),
+  animated: Boolean(row.animated),
   creator: row.creator ?? null,
   custom: true,
+  ...(row.pending ? { pending: true } : {}),
 });
 
 export function getItem(id) {
   if (STATIC_ITEMS_BY_ID.has(id)) return STATIC_ITEMS_BY_ID.get(id);
   const m = /^c-(\d+)$/.exec(String(id));
   const row = m && stmt.customItem.get(Number(m[1]));
-  return row?.active ? { ...toCustomItem(row), creatorId: row.creator_id } : null;
+  return row?.active && !row.pending ? { ...toCustomItem(row), creatorId: row.creator_id } : null;
 }
 
 export const allItems = () => [...STATIC_ITEMS_BY_ID.values(), ...stmt.customItems.all().map(toCustomItem)];
 export const customItemFile = (id) => stmt.customItem.get(id);
 
-export function addCustomItem({ type, name, price, filePath, mime, creatorId }) {
-  const id = stmt.insertCustom.run(type, name, price, filePath, mime, creatorId, Date.now()).lastInsertRowid;
-  return getItem(`c-${id}`);
+export function addCustomItem({ type, name, price, filePath, mime, animated, pending, creatorId }) {
+  const id = stmt.insertCustom.run(type, name, price, filePath, mime, animated ? 1 : 0, pending ? 1 : 0, creatorId, Date.now()).lastInsertRowid;
+  return toCustomItem(stmt.customItem.get(id));
 }
+
+/** Eingereichte Artikel, die auf Freigabe warten – alle (Moderation) oder nur die eigenen. */
+export const pendingItems = (creatorId) => (creatorId ? stmt.ownPending.all(creatorId) : stmt.pendingItems.all()).map(toCustomItem);
+export const approveCustomItem = (numericId) => stmt.approveCustom.run(numericId).changes > 0;
 
 export const removeCustomItem = (numericId) => stmt.deactivateCustom.run(numericId);
 
 // ─── Wallet & Level ────────────────────────────────────────────────────────
 
+/** Admins haben unbegrenzt Coins (Käufe kosten nichts). Hier ohne roles.js, um einen Import-Zyklus zu vermeiden. */
+function hasUnlimitedCoins(userId) {
+  const u = stmt.userRole.get(userId);
+  return Boolean(u && (u.role === 'admin' || config.adminUsernames.includes(u.username.toLowerCase())));
+}
+
 export function getWallet(userId) {
   stmt.ensureWallet.run(userId);
   const { coins, xp } = stmt.wallet.get(userId);
-  return { coins, ...levelInfo(xp) };
+  return { coins, ...levelInfo(xp), ...(hasUnlimitedCoins(userId) ? { unlimited: true } : {}) };
 }
 
 /** Anzahl gezählter Aktionen (auch über den Limits) – z. B. für Abzeichen und Statistiken. */
@@ -248,11 +272,10 @@ function book(userId, action, ref, coins, xp, label, extra = {}) {
   let bonus = 0;
   // Mehrere Level auf einmal (z. B. große Belohnung) – jedes einzeln vergüten
   for (let l = before + 1; l <= after; l++) {
-    bonus += levelUpCoins(l);
     levelUp = l;
+    if (stmt.insertLedgerOnce.run(userId, 'level.up', `level:${l}`, day, levelUpCoins(l), 0, Date.now()).changes) bonus += levelUpCoins(l);
   }
   if (bonus) {
-    stmt.insertLedger.run(userId, 'level.up', `level:${after}`, day, bonus, 0, Date.now());
     stmt.addToWallet.run(bonus, 0, userId);
     after = getWallet(userId).level;
   }
@@ -313,6 +336,11 @@ export function awardDailyLogin(userId) {
 /** Zieht Coins ab (z. B. Shop). Wirft einen Fehler bei zu wenig Guthaben. */
 export const spend = db.transaction((userId, coins, action, ref) => {
   const wallet = getWallet(userId);
+  if (wallet.unlimited) {
+    // Admin: Kauf wird protokolliert, aber nichts abgezogen
+    stmt.insertLedger.run(userId, action, String(ref), today(), 0, 0, Date.now());
+    return wallet;
+  }
   if (wallet.coins < coins) throw new Error('Nicht genügend Coins.');
   stmt.insertLedger.run(userId, action, String(ref), today(), -coins, 0, Date.now());
   stmt.addToWallet.run(-coins, 0, userId);
@@ -447,4 +475,5 @@ export const catalog = () => ({
   showcases: SHOWCASES,
   levels: Array.from({ length: 30 }, (_, i) => ({ level: i + 1, toNext: xpToNext(i + 1) })),
   stammgastLevel: STAMMGAST_LEVEL,
+  shopUploadLevel: SHOP_UPLOAD_LEVEL,
 });

@@ -15,6 +15,9 @@ const EXTENSIONS = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
   'image/webp': '.webp',
+  'image/gif': '.gif',
+  'video/webm': '.webm',
+  'video/mp4': '.mp4',
 };
 
 /**
@@ -32,7 +35,7 @@ export function createUpload(area, maxMb, types) {
     }),
     limits: { fileSize: maxMb * 1024 * 1024, files: 1 },
     fileFilter: (_req, file, cb) =>
-      types.includes(file.mimetype) ? cb(null, true) : cb(new Error('Dateityp nicht erlaubt (PDF, PNG, JPG oder WebP).')),
+      types.includes(file.mimetype) ? cb(null, true) : cb(new Error('Dieser Dateityp ist hier nicht erlaubt.')),
   });
 }
 

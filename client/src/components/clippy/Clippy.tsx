@@ -13,6 +13,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useEconomyStore } from '../../store/economyStore';
 import { useWindowStore } from '../../store/windowStore';
 import { ClippySvg } from './ClippyArt';
+
+/** Maßstab der Büroklammer – etwa so groß wie im Original-Office (≈ 100 px hoch). */
+const CLIPPY_SIZE = 0.55;
 import './clippy.css';
 
 interface ClippyStore {
@@ -107,8 +110,8 @@ export function Clippy() {
   const move = useCallback(
     ({ dx, dy }: { dx: number; dy: number }, s: { right: number; bottom: number }) =>
       setOffset({
-        right: Math.min(Math.max(s.right - dx, 0), window.innerWidth - 100),
-        bottom: Math.min(Math.max(s.bottom - dy, 32), window.innerHeight - 190),
+        right: Math.min(Math.max(s.right - dx, 0), window.innerWidth - CLIPPY_SIZE * 100),
+        bottom: Math.min(Math.max(s.bottom - dy, 32), window.innerHeight - CLIPPY_SIZE * 190),
       }),
     [setOffset],
   );
@@ -163,7 +166,7 @@ export function Clippy() {
         onDoubleClick={nextTip}
         onClick={() => !bubble && setBubble(true)}
       >
-        <ClippySvg hat={profile?.clippyHat} glasses={profile?.clippyGlasses} />
+        <ClippySvg hat={profile?.clippyHat} glasses={profile?.clippyGlasses} size={CLIPPY_SIZE} />
       </div>
     </div>
   );

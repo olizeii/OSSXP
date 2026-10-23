@@ -47,7 +47,7 @@ Jedes Modul legt seine Tabellen beim Start selbst an (`CREATE TABLE IF NOT EXIST
 | `ledger` | **Jede** Belohnung/Ausgabe als Buchung (auch gedeckelte mit 0) | `UNIQUE(user_id, action, ref)` |
 | `user_badges` | Verdiente Abzeichen | `(user_id, badge_id)` |
 | `inventory` | Gekaufte Shop-Artikel | `(user_id, item_id)` |
-| `shop_custom_items` | Von Moderator:innen hochgeladene Workshop-Artikel (Bild unter `UPLOAD_DIR/shop`) | `id` → Artikel-ID `c-<id>` |
+| `shop_custom_items` | Hochgeladene Workshop-Artikel (Bild/Video unter `UPLOAD_DIR/shop`), `animated`, `pending` (wartet auf Freigabe) | `id` → Artikel-ID `c-<id>` |
 
 Kataloge (Belohnungen, Abzeichen, Shop-Artikel, Profil-Themes) stehen **im Code** (`server/src/economy/catalog.js`)
 und werden über `GET /api/economy/catalog` an den Client ausgeliefert – eine einzige Quelle. Workshop-Artikel kommen
@@ -82,11 +82,14 @@ Gespeichert werden nur **Admin** und **Moderator** (`users.role`); die übrigen 
 | 7TV-Emotes zum OSSXP-Set hinzufügen | Verifiziert |
 | Subreddit gründen (startet privat, öffentlich ab 10 Mitgliedern) | Stammgast |
 | Chat-Channels anlegen/löschen, Timeouts, fremde Beiträge/Uploads/Kommentare löschen, Emotes entfernen | Moderator |
-| Workshop-Artikel in den Shop hochladen (50 % der Verkäufe gehen an die Ersteller:in) | Moderator |
+| Shop-Artikel hochladen – sofort live (50 % der Verkäufe gehen an die Ersteller:in), Einreichungen freigeben | Moderator |
+| Shop-Artikel einreichen (GIF/WebP/APNG, Hintergründe auch WebM/MP4) – erst nach Freigabe sichtbar | Stammgast ab Level 15 |
+| Unbegrenzt Coins, Coins/XP gutschreiben (`POST /api/admin/users/:name/grant`) | Admin |
 | News/Poster veröffentlichen, Moderator:innen ernennen | Admin |
 
 **Test-Admin:** Gibt es beim Start keinen Admin, legt `server/src/seed.js` im Entwicklungsmodus `admin` / `admin1234` an.
-In Produktion nur mit `SEED_ADMIN_PASSWORD` (optional `SEED_ADMIN_USERNAME`). Bestehende Konten werden nie befördert;
+In Produktion nur mit `SEED_ADMIN_PASSWORD` (optional `SEED_ADMIN_USERNAME`). Ein bestehendes Konto wird mit
+`npm run set-role -- <name> admin` (Skript `server/scripts/set-role.js`) zum Admin. Bestehende Konten werden nie befördert;
 Namen wie „admin“, „moderator“, „system“ oder „clippy“ sind bei der Registrierung gesperrt.
 
 ### Warum ein Ledger?
@@ -227,7 +230,9 @@ model ShopCustomItem {
   price     Int
   imagePath String
   imageMime String
-  animated  Boolean  @default(false) // GIF/animiertes WebP
+  mime      String   // image/* oder video/webm, video/mp4 (nur Hintergründe)
+  animated  Boolean  @default(false) // Video, GIF mit mehreren Frames, animiertes WebP, APNG
+  pending   Boolean  @default(false) // Einreichung von Stammgästen bis zur Freigabe
   creatorId Int?
   creator   User?    @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())

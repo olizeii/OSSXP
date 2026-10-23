@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { api } from '../../core/api';
 import { avatarUrl } from '../../core/avatars';
 import { launchApp } from '../../core/launcher';
-import { BadgeIcon, FramedAvatar, itemClass, itemStyle } from '../../components/user/UserBits';
+import { BackgroundMedia, BadgeIcon, FramedAvatar, itemClass, itemStyle } from '../../components/user/UserBits';
 import { ClippyPreview } from '../../components/clippy/Clippy';
 import { useAuthStore, type User } from '../../store/authStore';
 import { useEconomyStore, type ItemType, type Showcase } from '../../store/economyStore';
@@ -218,7 +218,9 @@ export function ProfileEditor({ profile, onClose, onSaved }: { profile: PublicPr
                   <div className="pf-items">
                     {owned('background').map((i) => (
                       <button key={i.id} className={`pf-item ${form.background === i.id ? 'on' : ''}`} onClick={() => set('background', i.id)} title={i.name}>
-                        <span className={`pf-item-preview ${itemClass(i)}`} style={itemStyle(i)} />
+                        <span className={`pf-item-preview ${itemClass(i)}`} style={itemStyle(i)}>
+                          <BackgroundMedia item={i} hover />
+                        </span>
                         <span>{i.name}</span>
                       </button>
                     ))}

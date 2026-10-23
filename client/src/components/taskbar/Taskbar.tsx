@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { apps } from '../../apps/registry';
 import { launchApp } from '../../core/launcher';
 import { useAuthStore } from '../../store/authStore';
-import { useEconomyStore } from '../../store/economyStore';
+import { formatCoins, useEconomyStore } from '../../store/economyStore';
 import { useUiStore } from '../../store/uiStore';
 import { CoinIcon } from '../user/UserBits';
 import { useWindowStore } from '../../store/windowStore';
@@ -73,7 +73,7 @@ function SystemTray() {
           title={`Level ${wallet.level} · ${wallet.levelXp}/${wallet.levelSpan} XP – zum Punkteshop`}
           onClick={() => launchApp('shop')}
         >
-          <CoinIcon /> {wallet.coins}
+          <CoinIcon /> {formatCoins(wallet)}
         </button>
       )}
       <button
